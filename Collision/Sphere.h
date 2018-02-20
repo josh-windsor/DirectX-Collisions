@@ -7,7 +7,7 @@
 class HeightMap;
 class CommonMesh;
 
-#define RESTITUTION 0.7
+#define RESTITUTION 0.6
 
 __declspec(align(16)) class Sphere
 {

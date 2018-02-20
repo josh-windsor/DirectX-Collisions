@@ -347,13 +347,11 @@ void Application::HandleUpdate()
 		{
 			if (hToggle)
 			{
-				int test = m_pHeightMap->DisableBelowLevel(4);
-				test = test;
-			
+				m_pHeightMap->DisableBelowLevel(4);
 			}
 			else
 			{
-				//m_pHeightMap->EnableAll();
+				m_pHeightMap->EnableAll();
 			}
 			hToggle = !hToggle;
 			dbH = true;
@@ -409,7 +407,7 @@ void Application::LoopSpheres()
 					{
 						sphere1->Bounce(colNorm);
 						sphere2->Bounce(-colNorm);
-						PositionalCorrection(sphere1, sphere2, 1 - distance, colNorm / sqrtf(distance));
+						PositionalCorrection(sphere1, sphere2, 2 - distance, colNorm / sqrtf(distance));
 
 					}
 
@@ -441,16 +439,19 @@ bool Application::SphereSphereIntersection(Sphere* sphere1, Sphere* sphere2, XMV
 
 void Application::PositionalCorrection(Sphere* sphere1, Sphere* sphere2, float penetration, XMVECTOR& colNormN)
 {
-	const float percent = 0.4; // usually 20% to 80%
-	const float slop = 0.1; // usually 0.01 to 0.1
-	XMVECTOR vecCorrection = max(penetration - slop, 0.0f) / (sphere1->mMass + sphere2->mMass) * penetration * colNormN;
+	const float percent = 0.8; // usually 20% to 80%
+	const float slop = 0.05; // usually 0.01 to 0.1
+	XMVECTOR vecCorrection = max(penetration - slop, 0.0f) / 2 * penetration * colNormN;
 	XMVECTOR vecSpherePos = XMLoadFloat3(&sphere1->mSpherePos);
 	XMVECTOR vecSpherePos2 = XMLoadFloat3(&sphere2->mSpherePos);
+
 	XMVECTOR vecCorrected = vecSpherePos - vecCorrection;
 	XMVECTOR vecCorrected2 = vecSpherePos2 + vecCorrection;
+
 	XMFLOAT3 correctionF, correctionF2;
 	XMStoreFloat3(&correctionF, vecCorrected);
 	XMStoreFloat3(&correctionF2, vecCorrected2);
+
 	sphere1->mSpherePos = correctionF;
 	sphere2->mSpherePos = correctionF2;
 }
