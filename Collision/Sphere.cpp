@@ -25,15 +25,36 @@ void Sphere::Update(float dT)
 
 		mSphereSpeed = XMVectorGetX(XMVector3Length(vSVel));
 
-		mSphereCollided = m_pHeightMap->RayCollision(vSPos, vSVel, mSphereSpeed, vSColPos, vSColNorm);
+		mSphereCollided = m_pHeightMap->SphereTriCollision(this, vSColPos, vSColNorm);
 
 		if (mSphereCollided)
 		{
-			mSphereVel = XMFLOAT3(0.0f, 0.0f, 0.0f);
-			XMStoreFloat3(&mSpherePos, vSColPos);
+			Bounce(vSColNorm);
+			mSphereCollided = false;
+
+			/*if (mSphereSpeed > 0.2f)
+			{
+				mSphereCollided = false;
+
+			}
+			else
+			{
+				mSphereVel = XMFLOAT3(0,0,0);
+			}*/
 		}
+
 	}
 }
+
+void Sphere::Bounce(XMVECTOR surfaceNormal)
+{
+	XMVECTOR sphereVel = XMLoadFloat3(&mSphereVel);
+	XMVECTOR u = (XMVector4Dot(sphereVel, surfaceNormal)/ XMVector4Dot(surfaceNormal, surfaceNormal)) * surfaceNormal;
+	XMVECTOR w = sphereVel - u;
+
+	XMStoreFloat3(&mSphereVel, w - (RESTITUTION * u));
+}
+
 void Sphere::Draw()
 {
 	if (m_pSphereMesh)
@@ -41,3 +62,4 @@ void Sphere::Draw()
 		m_pSphereMesh->Draw();
 	}
 }
+

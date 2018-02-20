@@ -7,6 +7,7 @@
 class HeightMap;
 class CommonMesh;
 
+#define RESTITUTION 0.7
 
 __declspec(align(16)) class Sphere
 {
@@ -29,6 +30,10 @@ public:
 		_mm_free(p);
 	}
 	DirectX::XMFLOAT3 mSpherePos;
+	float mMass = 1;
+	float mRadius = 1;
+	float mSphereSpeed;
+	void Bounce(DirectX::XMVECTOR surfaceNormal);
 
 private:
 	CommonMesh * m_pSphereMesh;
@@ -38,8 +43,8 @@ private:
 	const DirectX::XMFLOAT3 mGravityAcc = DirectX::XMFLOAT3(0.0f, -0.05f, 0.0f);
 	HeightMap* m_pHeightMap;
 
-	float mSphereSpeed;
 	bool mSphereCollided = false;
+
 };
 
 #endif

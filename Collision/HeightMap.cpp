@@ -562,6 +562,160 @@ bool HeightMap::RayCollision(XMVECTOR& rayPos, XMVECTOR rayDir, float raySpeed, 
 	return false;
 }
 
+//bool HeightMap::SphereSphereCollision() 
+//{
+//
+//}
+
+
+bool HeightMap::SphereTriCollision(Sphere* sphere,  XMVECTOR& colPos, XMVECTOR& colNormN)
+{
+	XMVECTOR v0, v1, v2, v3;
+	int i0, i1, i2, i3;
+
+	// This resets the collision colouring
+	for (int f = 0; f < m_HeightMapFaceCount; ++f)
+		m_pFaceData[f].m_bCollided = false;
+
+#ifdef COLOURTEST
+	// This is just a piece of test code for the map colouring
+	static float frame = 0;
+
+	for (int f = 0; f < m_HeightMapFaceCount; ++f)
+	{
+		if ((int)frame%m_HeightMapFaceCount == f)
+			m_pFaceData[f].m_bCollided = true;
+	}
+
+	RebuildVertexData();
+
+	frame += 0.1f;
+
+	// end of test code
+#endif
+
+
+	// This is a brute force solution that checks against every triangle in the heightmap
+	for (int f = 0; f < m_HeightMapFaceCount; ++f)
+	{
+		//012 213
+		if (!m_pFaceData[f].m_bDisabled && SpherePlane(f, sphere, colPos, colNormN))
+		{
+				m_pFaceData[f].m_bCollided = true;
+				RebuildVertexData();
+				return true;
+			
+		}
+	}
+
+	return false;
+
+}
+
+bool HeightMap::SpherePlane(int nFaceIndex, Sphere* sphere, XMVECTOR& colPos, XMVECTOR& colNormN)
+{
+	XMVECTOR vert0 = XMLoadFloat3(&m_pFaceData[nFaceIndex].m_v0);
+	XMVECTOR vert1 = XMLoadFloat3(&m_pFaceData[nFaceIndex].m_v1);
+	XMVECTOR vert2 = XMLoadFloat3(&m_pFaceData[nFaceIndex].m_v2);
+
+	// Step 1: Calculate |COLNORM| 
+	// Note that the variable colNormN is passed through by reference as part of the function parameters so you can calculate and return it
+	colNormN = XMLoadFloat3(&m_pFaceData[nFaceIndex].m_vNormal);
+
+	XMVECTOR sphereCenter = XMLoadFloat3(&sphere->mSpherePos);
+	XMVECTOR p = ClosestPointToTriangle(sphereCenter, vert0, vert1, vert2);
+	XMVECTOR v = p - sphereCenter;
+
+	float vv = XMVectorGetX(XMVector3Dot(v,v));
+
+	if (vv <= sphere->mRadius)
+	{
+		PositionalCorrection(sphere, 1 - vv, colNormN);
+		return true;
+	}
+
+	return false;
+}
+
+void HeightMap::PositionalCorrection(Sphere* sphere, float penetration, XMVECTOR& colNormN)
+{ 
+	const float percent = 0.8; // usually 20% to 80%
+	const float slop = 0.1; // usually 0.01 to 0.1
+	XMVECTOR vecCorrection = max(penetration - slop, 0.0f) / sphere->mMass * penetration * colNormN;
+	XMVECTOR vecSpherePos = XMLoadFloat3(&sphere->mSpherePos);
+	XMVECTOR vecCorrected = vecSpherePos + vecCorrection;
+	XMFLOAT3 correctionF;
+	XMStoreFloat3(&correctionF, vecCorrected);
+	sphere->mSpherePos = correctionF;
+}
+
+//built from RTCD p141
+// a b & c = vert0,1,2
+XMVECTOR HeightMap::ClosestPointToTriangle(XMVECTOR& spherePos, XMVECTOR& a, XMVECTOR& b, XMVECTOR& c)
+{
+	// Check if P in vertex region outside A
+	XMVECTOR ab = b - a;
+	XMVECTOR ac = c - a;
+	XMVECTOR ap = spherePos - a;
+
+	float d1 = XMVectorGetX(XMVector3Dot(ab, ap));
+	float d2 = XMVectorGetX(XMVector3Dot(ac, ap));
+
+	if (d1 <= 0.0f && d2 <= 0.0f) 
+	{
+		return a;// barycentric coordinates (1,0,0)
+	}
+
+	// Check if P in vertex region outside B
+	XMVECTOR bp = spherePos - b;
+	float d3 = XMVectorGetX(XMVector3Dot(ab, bp));
+	float d4 = XMVectorGetX(XMVector3Dot(ac, bp));
+	if (d3 >= 0.0f && d4 <= d3) 
+	{
+		return b; // barycentric coordinates (0,1,0)
+	}
+
+	// Check if P in edge region of AB, if so return projection of P onto AB
+	float vc = d1 * d4 - d3 * d2;
+	if (vc <= 0.0f && d1 >= 0.0f && d3 <= 0.0f)
+	{
+		float v = d1 / (d1 - d3);
+		return a + v * ab; // barycentric coordinates (1-v,v,0)
+	}
+	// Check if P in vertex region outside C
+	XMVECTOR cp = spherePos - c;
+	float d5 = XMVectorGetX(XMVector3Dot(ab, cp));
+	float d6 = XMVectorGetX(XMVector3Dot(ac, cp));
+	if (d6 >= 0.0f && d5 <= d6)
+	{ 
+		return c; // barycentric coordinates (0,0,1)
+	}
+
+
+	// Check if P in edge region of AC, if so return projection of P onto AC
+	float vb = d5 * d2 - d1 * d6;
+	if (vb <= 0.0f && d2 >= 0.0f && d6 <= 0.0f) 
+	{
+		float w = d2 / (d2 - d6);
+		return a + w * ac; // barycentric coordinates (1-w,0,w)
+	}
+	// Check if P in edge region of BC, if so return projection of P onto BC
+	float va = d3 * d6 - d5 * d4;
+	if (va <= 0.0f && (d4 - d3) >= 0.0f && (d5 - d6) >= 0.0f) 
+	{
+		float w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+		return b + w * (c - b); // barycentric coordinates (0,1-w,w)
+	}
+	// P inside face region. Compute Q through its barycentric coordinates (u,v,w)
+	float denom = 1.0f / (va + vb + vc);
+	float v = vb * denom;
+	float w = vc * denom;
+	return a + ab * v + ac * w; // = u*a + v*b + w*c, u = va * denom = 1.0f-v-w
+
+}
+
+
+
 
 // Function:	rayTriangle
 // Description: Tests a ray for intersection with a triangle
@@ -720,7 +874,7 @@ bool HeightMap::PointPlane(const XMVECTOR& vert0, const XMVECTOR& vert1, const X
 	// Step 3: Calculate full equation
 	XMVECTOR vN = XMVector3Dot(sNormN, pointPos);
 	XMStoreFloat(&sNumer, vN);
-	// ...
+	// ...h
 
 	// Step 4: Return false if < 0 (behind plane)
 	if (sNumer + sD < 0)

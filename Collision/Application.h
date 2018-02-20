@@ -15,6 +15,7 @@
 #
 
 class HeightMap;
+class Sphere;
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -57,6 +58,9 @@ private:
 	Sphere* sphereCollection[SPHERESIZE] = {nullptr};
 	CommonMesh* m_pSphereMesh;
 	void CreateSphere(XMFLOAT3 iSpherePos);
+	bool SphereSphereIntersection(Sphere* sphere1, Sphere* sphere2, XMVECTOR& colN, float& distance);
+	void PositionalCorrection(Sphere* sphere1, Sphere* sphere2, float penetration, XMVECTOR& colNormN);
+	void LoopSpheres();
 
 	void ReloadShaders();
 };
