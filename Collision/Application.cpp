@@ -374,15 +374,18 @@ void Application::HandleUpdate()
 	}
 	if ((this->IsKeyPressed(' ') && over1) || !this->IsKeyPressed(' '))
 	{
+		LoopSpheres();
 		for (Sphere* sphere : sphereCollection)
 		{
 			if (sphere != nullptr)
 			{
+				sphere->CheckCollision();
+
 				sphere->Update(dT);
 
 			}
 		}
-		LoopSpheres();
+
 	}
 
 	
@@ -405,9 +408,10 @@ void Application::LoopSpheres()
 					float distance;
 					if (SphereSphereIntersection(sphere1, sphere2, colNorm, distance))
 					{
+						PositionalCorrection(sphere1, sphere2, 1 - distance, colNorm / sqrtf(distance));
+
 						sphere1->Bounce(colNorm);
 						sphere2->Bounce(-colNorm);
-						PositionalCorrection(sphere1, sphere2, 2 - distance, colNorm / sqrtf(distance));
 
 					}
 
@@ -439,7 +443,7 @@ bool Application::SphereSphereIntersection(Sphere* sphere1, Sphere* sphere2, XMV
 
 void Application::PositionalCorrection(Sphere* sphere1, Sphere* sphere2, float penetration, XMVECTOR& colNormN)
 {
-	const float percent = 0.8; // usually 20% to 80%
+	const float percent = 0.2; // usually 20% to 80%
 	const float slop = 0.05; // usually 0.01 to 0.1
 	XMVECTOR vecCorrection = max(penetration - slop, 0.0f) / 2 * penetration * colNormN;
 	XMVECTOR vecSpherePos = XMLoadFloat3(&sphere1->mSpherePos);
