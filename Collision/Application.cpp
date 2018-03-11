@@ -9,8 +9,6 @@ const int CAMERA_ROTATE = 1;
 const int CAMERA_MAX = 2;
 
 
-//////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////
 
 bool Application::HandleStart()
 {
@@ -93,7 +91,7 @@ void Application::ReloadShaders()
 		this->SetWindowTitle("Collision: Zoom / Rotate Q, A / O, P, Camera C, Drop Sphere R, N and T, Wire W");
 }
 
-void Application::HandleUpdate()
+void Application::HandleUpdate(float dT)
 {
 	if( m_cameraState == CAMERA_ROTATE )
 	{
@@ -363,9 +361,8 @@ void Application::HandleUpdate()
 		dbH = false;
 	}
 
-	static const float dT = 0.016f;
 	static float timer = 0.0f;
-	timer += 0.016f;
+	timer += dT;
 	bool over1 = false;
 	if (timer >= 1.0f)
 	{
@@ -382,8 +379,8 @@ void Application::HandleUpdate()
 				sphere->CheckCollision();
 
 				sphere->Update(dT);
-
 			}
+
 		}
 
 	}
@@ -406,7 +403,7 @@ void Application::LoopSpheres()
 					Sphere* sphere2 = sphereCollection[j];
 					XMVECTOR colNorm;
 					float distance;
-					if (SphereSphereIntersection(sphere1, sphere2, colNorm, distance))
+					if (sphere1->SphereSphereIntersection(sphere2, colNorm, distance))
 					{
 						PositionalCorrection(sphere1, sphere2, 1 - distance, colNorm / sqrtf(distance));
 
@@ -421,7 +418,7 @@ void Application::LoopSpheres()
 	}
 }
 
-bool Application::SphereSphereIntersection(Sphere* sphere1, Sphere* sphere2, XMVECTOR& colN, float& distance) 
+/*bool Application::SphereSphereIntersection(Sphere* sphere1, Sphere* sphere2, XMVECTOR& colN, float& distance) 
 {
 	XMVECTOR vecSphere1Pos = XMLoadFloat3(&sphere1->mSpherePos);
 	XMVECTOR vecSphere2Pos = XMLoadFloat3(&sphere2->mSpherePos);
@@ -439,13 +436,13 @@ bool Application::SphereSphereIntersection(Sphere* sphere1, Sphere* sphere2, XMV
 
 	return false;
 
-}
+}*/
 
-void Application::PositionalCorrection(Sphere* sphere1, Sphere* sphere2, float penetration, XMVECTOR& colNormN)
+/*void Application::PositionalCorrection(Sphere* sphere1, Sphere* sphere2, float penetration, XMVECTOR& colNormN)
 {
-	const float percent = 0.2; // usually 20% to 80%
+	const float percent = 0.3; // usually 20% to 80%
 	const float slop = 0.05; // usually 0.01 to 0.1
-	XMVECTOR vecCorrection = max(penetration - slop, 0.0f) / 2 * penetration * colNormN;
+	XMVECTOR vecCorrection = max(penetration - slop, 0.0f) / (sphere1->mMass + sphere2->mMass) * penetration * colNormN;
 	XMVECTOR vecSpherePos = XMLoadFloat3(&sphere1->mSpherePos);
 	XMVECTOR vecSpherePos2 = XMLoadFloat3(&sphere2->mSpherePos);
 
@@ -458,7 +455,7 @@ void Application::PositionalCorrection(Sphere* sphere1, Sphere* sphere2, float p
 
 	sphere1->mSpherePos = correctionF;
 	sphere2->mSpherePos = correctionF2;
-}
+}*/
 
 
 

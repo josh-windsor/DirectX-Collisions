@@ -568,7 +568,7 @@ bool HeightMap::RayCollision(XMVECTOR& rayPos, XMVECTOR rayDir, float raySpeed, 
 //}
 
 
-bool HeightMap::SphereTriCollision(Sphere* sphere,  XMVECTOR& colPos, XMVECTOR& colNormN)
+/*bool HeightMap::SphereTriCollision(Sphere* sphere,  XMVECTOR& colPos, XMVECTOR& colNormN)
 {
 	XMVECTOR v0, v1, v2, v3;
 	int i0, i1, i2, i3;
@@ -610,9 +610,9 @@ bool HeightMap::SphereTriCollision(Sphere* sphere,  XMVECTOR& colPos, XMVECTOR& 
 
 	return false;
 
-}
+}*/
 
-bool HeightMap::SpherePlane(int nFaceIndex, Sphere* sphere, XMVECTOR& colPos, XMVECTOR& colNormN)
+/*bool HeightMap::SpherePlane(int nFaceIndex, Sphere* sphere, XMVECTOR& colPos, XMVECTOR& colNormN)
 {
 	XMVECTOR vert0 = XMLoadFloat3(&m_pFaceData[nFaceIndex].m_v0);
 	XMVECTOR vert1 = XMLoadFloat3(&m_pFaceData[nFaceIndex].m_v1);
@@ -635,23 +635,23 @@ bool HeightMap::SpherePlane(int nFaceIndex, Sphere* sphere, XMVECTOR& colPos, XM
 	}
 
 	return false;
-}
+}*/
 
-void HeightMap::PositionalCorrection(Sphere* sphere, float penetration, XMVECTOR& colNormN)
+/*void HeightMap::PositionalCorrection(Sphere* sphere, float penetration, XMVECTOR& colNormN)
 { 
 	const float percent = 0.8; // usually 20% to 80%
-	const float slop = 0.1; // usually 0.01 to 0.1
+	const float slop = 0.05; // usually 0.01 to 0.1
 	XMVECTOR vecCorrection = max(penetration - slop, 0.0f) / sphere->mMass * penetration * colNormN;
 	XMVECTOR vecSpherePos = XMLoadFloat3(&sphere->mSpherePos);
 	XMVECTOR vecCorrected = vecSpherePos + vecCorrection;
 	XMFLOAT3 correctionF;
 	XMStoreFloat3(&correctionF, vecCorrected);
 	sphere->mSpherePos = correctionF;
-}
+}*/
 
 //built from RTCD p141
 // a b & c = vert0,1,2
-XMVECTOR HeightMap::ClosestPointToTriangle(XMVECTOR& spherePos, XMVECTOR& a, XMVECTOR& b, XMVECTOR& c)
+/*XMVECTOR HeightMap::ClosestPointToTriangle(XMVECTOR& spherePos, XMVECTOR& a, XMVECTOR& b, XMVECTOR& c)
 {
 	// Check if P in vertex region outside A
 	XMVECTOR ab = b - a;
@@ -712,7 +712,7 @@ XMVECTOR HeightMap::ClosestPointToTriangle(XMVECTOR& spherePos, XMVECTOR& a, XMV
 	float w = vc * denom;
 	return a + ab * v + ac * w; // = u*a + v*b + w*c, u = va * denom = 1.0f-v-w
 
-}
+}*/
 
 
 

@@ -29,7 +29,7 @@ class Sphere;
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-#define SPHERESIZE 1000
+#define SPHERESIZE 100
 
 class Application:
 public CommonApp
@@ -39,7 +39,7 @@ public:
 protected:
 	bool HandleStart();
 	void HandleStop();
-	void HandleUpdate();
+	void HandleUpdate(float dT);
 	void HandleRender();
 private:
 
@@ -58,8 +58,8 @@ private:
 	Sphere* sphereCollection[SPHERESIZE] = {nullptr};
 	CommonMesh* m_pSphereMesh;
 	void CreateSphere(XMFLOAT3 iSpherePos);
-	bool SphereSphereIntersection(Sphere* sphere1, Sphere* sphere2, XMVECTOR& colN, float& distance);
-	void PositionalCorrection(Sphere* sphere1, Sphere* sphere2, float penetration, XMVECTOR& colNormN);
+	//bool SphereSphereIntersection(Sphere* sphere1, Sphere* sphere2, XMVECTOR& colN, float& distance);
+	//void PositionalCorrection(Sphere* sphere1, Sphere* sphere2, float penetration, XMVECTOR& colNormN);
 	void LoopSpheres();
 
 	void ReloadShaders();

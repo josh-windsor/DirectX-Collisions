@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <ctime>
 
 #include "D3DHelpers.h"
 
@@ -201,9 +202,9 @@ void App::Render()
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-void App::Update()
+void App::Update(float dT)
 {
-	this->HandleUpdate();
+	this->HandleUpdate(dT);
 
 	// ...anything else?
 	//
@@ -271,7 +272,7 @@ void App::HandleRender()
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-void App::HandleUpdate()
+void App::HandleUpdate(float dT)
 {
 }
 
@@ -564,12 +565,21 @@ int Run(App *pApp)
 	LARGE_INTEGER nextUpdate;
 	QueryPerformanceCounter(&nextUpdate);
 	nextUpdate.QuadPart += oneFrame.QuadPart;
+	clock_t current_ticks, delta_ticks = clock();
+	clock_t fps = 0;
 
 	while (DoMessages())
 	{
 		// Wait until the next 60th-of-a-second boundary has
 		// arrived (or been and gone).
 		LARGE_INTEGER now;
+		current_ticks = clock();
+
+		float dT = (float)delta_ticks / 1000;
+
+		pApp->Update(dT);
+
+		pApp->Render();
 
 		for(;;)
 		{
@@ -585,10 +595,8 @@ int Run(App *pApp)
 		}
 
 		nextUpdate.QuadPart = now.QuadPart + oneFrame.QuadPart;
+		delta_ticks = clock() - current_ticks; //the time, in ms, that took to render the scene
 
-		pApp->Update();
-
-		pApp->Render();
 	}
 
 	pApp->Stop();

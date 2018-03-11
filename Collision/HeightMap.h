@@ -30,7 +30,7 @@ public:
 	bool ReloadShader();
 	void DeleteShader();
 	bool RayCollision(XMVECTOR& rayPos, XMVECTOR rayDir, float speed, XMVECTOR& colPos, XMVECTOR& colNormN);
-	bool SphereTriCollision(Sphere* sphere, XMVECTOR& colPos, XMVECTOR& colNormN);
+	//bool SphereTriCollision(Sphere* sphere, XMVECTOR& colPos, XMVECTOR& colNormN);
 	int DisableBelowLevel(float fY);
 	int EnableAll(void);
 
@@ -44,8 +44,6 @@ public:
 
 	}
 
-private:
-
 	struct FaceCollisionData
 	{
 		XMFLOAT3 m_v0;
@@ -56,18 +54,25 @@ private:
 		bool m_bCollided; // Debug colouring
 		bool m_bDisabled;
 	};
+	FaceCollisionData* m_pFaceData;
+	int m_HeightMapFaceCount;
+	void RebuildVertexData(void);
+
+
+private:
+
+
 
 	bool LoadHeightMap(char* filename, float gridSize, float heightRange);
 	bool RayTriangle(int nFaceIndex, const XMVECTOR& rayPos, const XMVECTOR& rayDir, XMVECTOR& colPos, XMVECTOR& colNormN, float& colDist);
 	bool PointPlane(const XMVECTOR& vert0, const XMVECTOR& vert1, const XMVECTOR& vert2, const XMVECTOR& pointPos);
-	bool SpherePlane(int nFaceIndex, Sphere* sphere, XMVECTOR& colPos, XMVECTOR& colNormN);
-	void RebuildVertexData(void);
+	//bool SpherePlane(int nFaceIndex, Sphere* sphere, XMVECTOR& colPos, XMVECTOR& colNormN);
 	bool PointOverQuad(XMVECTOR& vPos, XMVECTOR& v0, XMVECTOR& v1, XMVECTOR& v2);
 	void BuildCollisionData(void);
 
-	void PositionalCorrection(Sphere* sphere, float penetration, XMVECTOR& colNormN);
+	//void PositionalCorrection(Sphere* sphere, float penetration, XMVECTOR& colNormN);
 
-	XMVECTOR ClosestPointToTriangle(XMVECTOR& spherePos, XMVECTOR& a, XMVECTOR& b, XMVECTOR& c);
+	//XMVECTOR ClosestPointToTriangle(XMVECTOR& spherePos, XMVECTOR& a, XMVECTOR& b, XMVECTOR& c);
 
 
 
@@ -79,9 +84,7 @@ private:
 	int m_HeightMapWidth;
 	int m_HeightMapLength;
 	int m_HeightMapVtxCount;
-	int m_HeightMapFaceCount;
 	XMFLOAT4* m_pHeightMap;
-	FaceCollisionData* m_pFaceData;
 	Vertex_Pos3fColour4ubNormal3fTex2f* m_pMapVtxs;
 
 	Application::Shader m_shader;
