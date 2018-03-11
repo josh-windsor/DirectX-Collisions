@@ -9,8 +9,6 @@ const int CAMERA_ROTATE = 1;
 const int CAMERA_MAX = 2;
 
 
-//////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////
 
 bool Application::HandleStart()
 {
@@ -373,15 +371,18 @@ void Application::HandleUpdate(float dT)
 	}
 	if ((this->IsKeyPressed(' ') && over1) || !this->IsKeyPressed(' '))
 	{
+		LoopSpheres();
 		for (Sphere* sphere : sphereCollection)
 		{
 			if (sphere != nullptr)
 			{
+				sphere->CheckCollision();
+
 				sphere->Update(dT);
 			}
 
 		}
-		LoopSpheres();
+
 	}
 
 	
@@ -404,7 +405,7 @@ void Application::LoopSpheres()
 					float distance;
 					if (sphere1->SphereSphereIntersection(sphere2, colNorm, distance))
 					{
-						sphere1->SpherePositionalCorrection(sphere2, 1 - distance, colNorm / sqrtf(distance));
+						PositionalCorrection(sphere1, sphere2, 1 - distance, colNorm / sqrtf(distance));
 
 						sphere1->Bounce(colNorm);
 						sphere2->Bounce(-colNorm);

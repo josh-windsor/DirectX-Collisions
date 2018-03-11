@@ -8,6 +8,7 @@ class HeightMap;
 class CommonMesh;
 
 #define RESTITUTION 0.6
+#define FRICTION 0.9
 
 __declspec(align(16)) class Sphere
 {
@@ -30,6 +31,8 @@ public:
 		_mm_free(p);
 	}
 	DirectX::XMFLOAT3 mSpherePos;
+	DirectX::XMFLOAT3 mSphereVel;
+
 	float mMass = 1;
 	float mRadius = 1;
 	float mSphereSpeed;
@@ -40,7 +43,6 @@ public:
 	void TrianglePositionalCorrection(float penetration, DirectX::XMVECTOR& colNormN);
 	DirectX::XMVECTOR ClosestPointToTriangle(DirectX::XMVECTOR& a, DirectX::XMVECTOR& b, DirectX::XMVECTOR& c);
 	bool CheckSphereTriCollisions(DirectX::XMVECTOR& colPos, DirectX::XMVECTOR& colNormN);
-
 
 private:
 	CommonMesh * m_pSphereMesh;

@@ -8,7 +8,6 @@ using namespace DirectX;
 void Sphere::Update(float dT)
 {
 	// Update Sphere
-	XMVECTOR vSColPos, vSColNorm;
 
 	if (!mSphereCollided)
 	{
@@ -35,16 +34,16 @@ void Sphere::Update(float dT)
 
 			/*if (mSphereSpeed > 0.2f)
 			{
-				mSphereCollided = false;
+			mSphereCollided = false;
 
 			}
 			else
 			{
-				mSphereVel = XMFLOAT3(0,0,0);
+			mSphereVel = XMFLOAT3(0,0,0);
 			}*/
 		}
-
 	}
+
 }
 
 bool Sphere::CheckSphereTriCollisions(XMVECTOR& colPos, XMVECTOR& colNormN)
@@ -223,7 +222,7 @@ void Sphere::Bounce(XMVECTOR surfaceNormal)
 	XMVECTOR u = (XMVector4Dot(sphereVel, surfaceNormal)/ XMVector4Dot(surfaceNormal, surfaceNormal)) * surfaceNormal;
 	XMVECTOR w = sphereVel - u;
 
-	XMStoreFloat3(&mSphereVel, w - (RESTITUTION * u));
+	XMStoreFloat3(&mSphereVel, (FRICTION * w) - (RESTITUTION * u));
 }
 
 void Sphere::Draw()
