@@ -49,7 +49,7 @@ public:
 	const char *GetStartErrorMessage() const;
 
 	//
-	void Update();
+	void Update(float dT);
 
 	//
 	void Render();
@@ -86,7 +86,7 @@ protected:
 	// Gets called at roughly 60Hz.
 	//
 	// Default implementation does nothing.
-	virtual void HandleUpdate();
+	virtual void HandleUpdate(float dT);
 
 	// Set the error message displayed, if HandleStart returns false.
 	void SetStartErrorMessage(const char *pFmt, ...);

@@ -34,13 +34,20 @@ public:
 	float mRadius = 1;
 	float mSphereSpeed;
 	void Bounce(DirectX::XMVECTOR surfaceNormal);
+	void SpherePositionalCorrection(Sphere* sphere2, float penetration, DirectX::XMVECTOR& colNormN);
+	bool SphereSphereIntersection(Sphere* sphere2, DirectX::XMVECTOR& colN, float& distance);
+	bool SphereTriangleIntersection(int nFaceIndex, DirectX::XMVECTOR& colPos, DirectX::XMVECTOR& colNormN);
+	void TrianglePositionalCorrection(float penetration, DirectX::XMVECTOR& colNormN);
+	DirectX::XMVECTOR ClosestPointToTriangle(DirectX::XMVECTOR& a, DirectX::XMVECTOR& b, DirectX::XMVECTOR& c);
+	bool CheckSphereTriCollisions(DirectX::XMVECTOR& colPos, DirectX::XMVECTOR& colNormN);
+
 
 private:
 	CommonMesh * m_pSphereMesh;
 	DirectX::XMMATRIX worldMtx;
 
 	DirectX::XMFLOAT3 mSphereVel;
-	const DirectX::XMFLOAT3 mGravityAcc = DirectX::XMFLOAT3(0.0f, -0.05f, 0.0f);
+	const DirectX::XMFLOAT3 mGravityAcc = DirectX::XMFLOAT3(0.0f, -50.0f, 0.0f);
 	HeightMap* m_pHeightMap;
 
 	bool mSphereCollided = false;
