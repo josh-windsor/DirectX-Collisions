@@ -65,6 +65,13 @@ protected:
 private:
 
 	float m_frameCount;
+	int m_currentHeightmap = 0;
+	char* heightmaps[4] = {
+		"Resources/heightmap0.bmp",
+		"Resources/heightmap1.bmp",
+		"Resources/heightmap2.bmp",
+		"Resources/heightmap3.bmp"
+	};
 
 	bool m_reload;
 

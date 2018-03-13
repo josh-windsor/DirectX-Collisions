@@ -17,7 +17,7 @@ bool Application::HandleStart()
 	m_frameCount = 0.0f;
 
 	m_bWireframe = true;
-	m_pHeightMap = new HeightMap( "Resources/heightmap.bmp", 2.0f, 0.75f );
+	m_pHeightMap = new HeightMap( "Resources/heightmap0.bmp", 2.0f, 0.75f );
 
 	m_pSphereMesh = CommonMesh::NewSphereMesh(this, 1.0f, 16, 16);
 
@@ -386,6 +386,28 @@ void Application::HandleUpdate(float dT)
 
 	}
 
+	static bool dbL = false;
+	if (this->IsKeyPressed('L'))
+	{
+		if (dbL == false)
+		{
+			delete(m_pHeightMap);
+			m_currentHeightmap++;
+			if (m_currentHeightmap > 3)
+			{
+				m_currentHeightmap = 0;
+			}
+			m_pHeightMap = new HeightMap(heightmaps[m_currentHeightmap], 2.0f, 0.75f);
+			m_pHeightMap->RebuildVertexData();
+		}
+	}
+	else
+	{
+		dbL = false;
+	}
+
+
+
 	
 }
 
@@ -452,12 +474,9 @@ bool Application::SphereSphereIntersection(SphereCollisionPair& collisionPair)
 void Application::BounceSpheres(SphereCollisionPair& collisionPair)
 {
 	float normalVelocityLength = XMVectorGetX(XMVector3Dot((collisionPair.secondSphere->mSphereVel - collisionPair.firstSphere->mSphereVel), collisionPair.normal));
-	if (normalVelocityLength > 0)
-	{
-		return;
-	}
 
-	float u = (-1.0 * normalVelocityLength) / (collisionPair.firstSphere->mInvMass + collisionPair.secondSphere->mInvMass);
+
+	float u = (-1.5f * normalVelocityLength) / (collisionPair.firstSphere->mInvMass + collisionPair.secondSphere->mInvMass);
 
 
 	XMVECTOR push = u * collisionPair.normal;
@@ -469,7 +488,7 @@ void Application::BounceSpheres(SphereCollisionPair& collisionPair)
 
 void Application::PositionalCorrection(SphereCollisionPair& collisionPair)
 {
-	const float percent = 0.4f; // usually 20% to 80%
+	const float percent = 0.99f; // usually 20% to 80%
 	const float slop = 0.001f; // usually 0.01 to 0.1
 	XMVECTOR vecCorrection = max(collisionPair.penetration - slop, 0.0f) / (collisionPair.firstSphere->mInvMass + collisionPair.secondSphere->mInvMass) * percent * collisionPair.normal;
 
