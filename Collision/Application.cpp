@@ -35,7 +35,10 @@ bool Application::HandleStart()
 
 	m_cameraState = CAMERA_ROTATE;
 
-
+	for (int i = 0; i < SPHERESIZE; i++)
+	{
+		sphereCollection[i] = new Sphere(m_pSphereMesh, m_pHeightMap);
+	}
 
 
 	return true;
@@ -43,14 +46,14 @@ bool Application::HandleStart()
 
 void Application::CreateSphere(XMFLOAT3 iSpherePos)
 {
-	Sphere* newSphere = new Sphere(XMLoadFloat3(&iSpherePos), m_pSphereMesh, m_pHeightMap);
 	static int lastIndex = 0;
 	for (int i = 0; i < SPHERESIZE; i++)
 	{
 
-		if (sphereCollection[i] == nullptr)
+		if (!sphereCollection[i]->mSphereAlive)
 		{
-			sphereCollection[i] = newSphere;
+			
+			sphereCollection[i]->StartSphere(XMLoadFloat3(&iSpherePos));
 			return;
 		}
 	}
@@ -59,7 +62,7 @@ void Application::CreateSphere(XMFLOAT3 iSpherePos)
 		lastIndex = 0;
 	}
 	delete(sphereCollection[lastIndex]);
-	sphereCollection[lastIndex] = newSphere;
+	sphereCollection[lastIndex]->StartSphere(XMLoadFloat3(&iSpherePos));
 	lastIndex++;
 
 
@@ -374,7 +377,7 @@ void Application::HandleUpdate(float dT)
 		//LoopSpheres();
 		for (Sphere* sphere : sphereCollection)
 		{
-			if (sphere != nullptr)
+			if (sphere->mSphereAlive)
 			{
 
 				sphere->Update(dT);
@@ -411,17 +414,24 @@ void Application::HandleUpdate(float dT)
 	
 }
 
+//void Application::LoopSpheres()
+//{
+//	XMVECTOR boundingBottomLeftFront;
+//	XMVECTOR boundingTopRightBack;
+//	
+//}
+
 void Application::LoopSpheres() 
 {
 	for (int i = 0; i < SPHERESIZE; ++i)
 	{
-		if (sphereCollection[i] != nullptr)
+		if (sphereCollection[i]->mSphereAlive)
 		{
 			Sphere* sphere1 = sphereCollection[i];
 
 			for (int j = 1; j < SPHERESIZE; ++j)
 			{
-				if (sphereCollection[j] != nullptr && sphereCollection[i] != sphereCollection[j])
+				if (sphereCollection[j]->mSphereAlive && sphereCollection[i] != sphereCollection[j])
 				{
 					SphereCollisionPair newPair;
 					newPair.firstSphere = sphereCollection[i];
@@ -441,6 +451,7 @@ void Application::CheckSphereCollisions()
 	for (SphereCollisionPair sCP : collisionPairs)
 	{
 		if (SphereSphereIntersection(sCP))
+
 		{
 			BounceSpheres(sCP);
 			PositionalCorrection(sCP);
@@ -537,7 +548,7 @@ void Application::HandleRender()
 
 	for (Sphere* sphere : sphereCollection)
 	{
-		if (sphere != nullptr)
+		if (sphere->mSphereAlive)
 		{
 
 			XMMATRIX worldMtx;

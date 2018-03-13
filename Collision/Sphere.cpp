@@ -5,14 +5,21 @@ using namespace DirectX;
 
 #include "HeightMap.h"
 
+void Sphere::StartSphere(XMVECTOR iSpherePos) 
+{
+	mSphereAlive = true;
+	mSpherePos = iSpherePos;
+}
+
+
 void Sphere::Update(float dT)
 {
 
-	XMVECTOR vSColPos, vSColNorm;
 	// Update Sphere
-
-	if (!mSphereCollided)
+	if (mSphereAlive && !mSphereCollided)
 	{
+
+		XMVECTOR vSColPos, vSColNorm;
 
 		mSphereVel += mGravityAcc * dT; // The new velocity gets passed through to the collision so it can base its predictions on our speed NEXT FRAME
 		mSpherePos += mSphereVel * dT; // Really important that we add LAST FRAME'S velocity as this was how fast the collision is expecting the ball to move
@@ -182,7 +189,7 @@ XMVECTOR Sphere::ClosestPointToTriangle(XMVECTOR& a, XMVECTOR& b, XMVECTOR& c)
 
 void Sphere::Draw()
 {
-	if (m_pSphereMesh)
+	if (mSphereAlive && m_pSphereMesh)
 	{
 		m_pSphereMesh->Draw();
 	}

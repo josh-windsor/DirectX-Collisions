@@ -92,11 +92,13 @@
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="HeightMap.cpp" />
+    <ClCompile Include="Octree.cpp" />
     <ClCompile Include="Sphere.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
     <ClInclude Include="HeightMap.h" />
+    <ClInclude Include="Octree.h" />
     <ClInclude Include="Sphere.h" />
   </ItemGroup>
   <ItemGroup>

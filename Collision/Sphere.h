@@ -15,8 +15,7 @@ using namespace DirectX;
 __declspec(align(16)) class Sphere
 {
 public:
-	Sphere(XMVECTOR iSpherePos, 
-		CommonMesh * i_pSphereMesh, HeightMap* i_pHeightMap) : mSpherePos(iSpherePos),
+	Sphere(CommonMesh * i_pSphereMesh, HeightMap* i_pHeightMap) : 
 		m_pSphereMesh(i_pSphereMesh), m_pHeightMap(i_pHeightMap) 
 	{
 		XMFLOAT3 gravity = XMFLOAT3(0.0f, -45.0f, 0.0f);
@@ -28,6 +27,7 @@ public:
 	}
 	~Sphere() {}
 
+	void StartSphere(XMVECTOR iSpherePos);
 	void Update(float dT);
 	void Draw();
 
@@ -48,6 +48,7 @@ public:
 	float mInvMass = 1/mMass;
 	float mRadius = 1;
 	float mSphereSpeed;
+	bool mSphereAlive = false;
 
 
 	bool SphereTriangleIntersection(int nFaceIndex, XMVECTOR& colNormN, float& penetration);
