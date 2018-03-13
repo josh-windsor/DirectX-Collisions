@@ -43,7 +43,7 @@ bool Application::HandleStart()
 
 void Application::CreateSphere(XMFLOAT3 iSpherePos)
 {
-	Sphere * newSphere = new Sphere(iSpherePos, XMFLOAT3(0.0f, 0.2f, 0.0f), m_pSphereMesh, m_pHeightMap);
+	Sphere* newSphere = new Sphere(XMLoadFloat3(&iSpherePos), m_pSphereMesh, m_pHeightMap);
 	static int lastIndex = 0;
 	for (int i = 0; i < SPHERESIZE; i++)
 	{
@@ -371,17 +371,18 @@ void Application::HandleUpdate(float dT)
 	}
 	if ((this->IsKeyPressed(' ') && over1) || !this->IsKeyPressed(' '))
 	{
-		LoopSpheres();
+		//LoopSpheres();
 		for (Sphere* sphere : sphereCollection)
 		{
 			if (sphere != nullptr)
 			{
-				sphere->CheckCollision();
 
 				sphere->Update(dT);
 			}
 
 		}
+		LoopSpheres();
+		CheckSphereCollisions();
 
 	}
 
@@ -390,72 +391,91 @@ void Application::HandleUpdate(float dT)
 
 void Application::LoopSpheres() 
 {
-	for (int i = 0; i < SPHERESIZE; i++)
+	for (int i = 0; i < SPHERESIZE; ++i)
 	{
 		if (sphereCollection[i] != nullptr)
 		{
 			Sphere* sphere1 = sphereCollection[i];
 
-			for (int j = i + 1; j < SPHERESIZE; j++)
+			for (int j = 1; j < SPHERESIZE; ++j)
 			{
 				if (sphereCollection[j] != nullptr && sphereCollection[i] != sphereCollection[j])
 				{
-					Sphere* sphere2 = sphereCollection[j];
-					XMVECTOR colNorm;
-					float distance;
-					if (sphere1->SphereSphereIntersection(sphere2, colNorm, distance))
-					{
-						PositionalCorrection(sphere1, sphere2, 1 - distance, colNorm / sqrtf(distance));
-
-						sphere1->Bounce(colNorm);
-						sphere2->Bounce(-colNorm);
-
-					}
-
+					SphereCollisionPair newPair;
+					newPair.firstSphere = sphereCollection[i];
+					newPair.secondSphere = sphereCollection[j];
+					newPair.normal = XMVectorZero();
+					newPair.penetration = 0.0f;
+					collisionPairs.push_back(newPair);
 				}
 			}
 		}
 	}
+
 }
 
-/*bool Application::SphereSphereIntersection(Sphere* sphere1, Sphere* sphere2, XMVECTOR& colN, float& distance) 
+void Application::CheckSphereCollisions() 
 {
-	XMVECTOR vecSphere1Pos = XMLoadFloat3(&sphere1->mSpherePos);
-	XMVECTOR vecSphere2Pos = XMLoadFloat3(&sphere2->mSpherePos);
-	colN = vecSphere2Pos - vecSphere1Pos;
-
-	distance = XMVectorGetX(XMVector3LengthSq(colN));
-
-	float radius = sphere1->mRadius + sphere2->mRadius;
-	radius = radius * radius;
-
-	if (distance < radius)
+	for (SphereCollisionPair sCP : collisionPairs)
 	{
-		return true;
+		if (SphereSphereIntersection(sCP))
+		{
+			BounceSpheres(sCP);
+			PositionalCorrection(sCP);
+		}
+	}
+	collisionPairs.clear();
+}
+
+bool Application::SphereSphereIntersection(SphereCollisionPair& collisionPair)
+{
+
+	XMVECTOR collisionNormal = collisionPair.firstSphere->mSpherePos - collisionPair.secondSphere->mSpherePos;
+
+	float distance = XMVectorGetX(XMVector3LengthSq(collisionNormal));
+
+	float radius = collisionPair.firstSphere->mRadius + collisionPair.secondSphere->mRadius;
+	float radiusSqr = radius * radius;
+
+	if (distance > radiusSqr)
+	{
+		return false;
+	}
+	//maybe need b - a?
+	collisionPair.normal = collisionNormal / distance;
+	collisionPair.penetration = radius - distance;
+
+	return true;
+
+}
+
+void Application::BounceSpheres(SphereCollisionPair& collisionPair)
+{
+	float normalVelocityLength = XMVectorGetX(XMVector3Dot((collisionPair.secondSphere->mSphereVel - collisionPair.firstSphere->mSphereVel), collisionPair.normal));
+	if (normalVelocityLength > 0)
+	{
+		return;
 	}
 
-	return false;
+	float u = (-1.0 * normalVelocityLength) / (collisionPair.firstSphere->mInvMass + collisionPair.secondSphere->mInvMass);
 
-}*/
 
-/*void Application::PositionalCorrection(Sphere* sphere1, Sphere* sphere2, float penetration, XMVECTOR& colNormN)
+	XMVECTOR push = u * collisionPair.normal;
+
+	collisionPair.firstSphere->mSphereVel -= push;
+	collisionPair.secondSphere->mSphereVel += push;
+
+}
+
+void Application::PositionalCorrection(SphereCollisionPair& collisionPair)
 {
-	const float percent = 0.3; // usually 20% to 80%
-	const float slop = 0.05; // usually 0.01 to 0.1
-	XMVECTOR vecCorrection = max(penetration - slop, 0.0f) / (sphere1->mMass + sphere2->mMass) * penetration * colNormN;
-	XMVECTOR vecSpherePos = XMLoadFloat3(&sphere1->mSpherePos);
-	XMVECTOR vecSpherePos2 = XMLoadFloat3(&sphere2->mSpherePos);
+	const float percent = 0.4f; // usually 20% to 80%
+	const float slop = 0.001f; // usually 0.01 to 0.1
+	XMVECTOR vecCorrection = max(collisionPair.penetration - slop, 0.0f) / (collisionPair.firstSphere->mInvMass + collisionPair.secondSphere->mInvMass) * percent * collisionPair.normal;
 
-	XMVECTOR vecCorrected = vecSpherePos - vecCorrection;
-	XMVECTOR vecCorrected2 = vecSpherePos2 + vecCorrection;
-
-	XMFLOAT3 correctionF, correctionF2;
-	XMStoreFloat3(&correctionF, vecCorrected);
-	XMStoreFloat3(&correctionF2, vecCorrected2);
-
-	sphere1->mSpherePos = correctionF;
-	sphere2->mSpherePos = correctionF2;
-}*/
+	collisionPair.firstSphere->mSpherePos  += vecCorrection;
+	collisionPair.secondSphere->mSpherePos -= vecCorrection;
+}
 
 
 
@@ -502,14 +522,9 @@ void Application::HandleRender()
 		{
 
 			XMMATRIX worldMtx;
-
-			worldMtx = XMMatrixTranslation(sphere->mSpherePos.x, sphere->mSpherePos.y, sphere->mSpherePos.z);
-
-			this->SetWorldMatrix(worldMtx);
-			SetDepthStencilState(false, false);
-
-			sphere->Draw();
-
+			XMFLOAT3 fSpherePos;
+			XMStoreFloat3(&fSpherePos, sphere->mSpherePos);
+			worldMtx = XMMatrixTranslation(fSpherePos.x, fSpherePos.y, fSpherePos.z);
 
 			this->SetWorldMatrix(worldMtx);
 			SetDepthStencilState(true, true);
