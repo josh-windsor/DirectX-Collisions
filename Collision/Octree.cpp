@@ -7,7 +7,8 @@ Octree::Octree(XMVECTOR iBoundingBottomLeftFront, XMVECTOR iBoundingTopRightBack
 	boundingBottomLeftFront(iBoundingBottomLeftFront),
 	depth(iDepth)
 {
-	XMStoreFloat3(&centralPoint, (iBoundingBottomLeftFront + iBoundingTopRightBack) / 2);
+	XMVECTOR vecCentralPoint = (iBoundingBottomLeftFront + iBoundingTopRightBack) / 2;
+	XMStoreFloat3(&centralPoint, vecCentralPoint);
 	sideLength = XMVectorGetX(iBoundingTopRightBack) - XMVectorGetX(iBoundingBottomLeftFront);
 	
 }
@@ -101,7 +102,9 @@ void Octree::AddNode(Sphere* iNode)
 			nodes.push_back(iNode);
 			if (nodes.size() == 1)
 			{
-				AddNode(nodes[0]);
+				Sphere* oldSphere = nodes[0];
+				AddNode(oldSphere);
+				//nodes.clear();
 			}
 
 		}

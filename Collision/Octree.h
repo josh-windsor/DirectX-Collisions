@@ -1,14 +1,16 @@
 #pragma once
 
 
-#include <DirectXMath.h>
-#include <malloc.h>
+//#include <DirectXMath.h>
+//#include <malloc.h>
 #include <vector>
+
+
 #include "Sphere.h"
+
 
 using namespace DirectX;
 
-class Sphere;
 
 class Octree
 {
@@ -18,11 +20,10 @@ public:
 	void AddNode(Sphere* iNode);
 	void AddToChild(int subSection, XMVECTOR iBoundingBottomLeftFront, XMVECTOR iBoundingTopRightBack, Sphere* iNode);
 
-	const int depthLimit = 5;
+	const int depthLimit = 10;
 
 	Octree* children[8] = { nullptr };
 	float sideLength;
-	int mass;
 	std::vector<Sphere*> nodes;
 	int depth;
 private:

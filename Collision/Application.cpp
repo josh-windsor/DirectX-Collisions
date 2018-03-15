@@ -1,5 +1,6 @@
 #include "Application.h"
 #include "HeightMap.h"
+#include "Octree.h"
 
 
 Application* Application::s_pApp = NULL;
@@ -35,6 +36,7 @@ bool Application::HandleStart()
 
 	m_cameraState = CAMERA_ROTATE;
 
+	//create all at beginning to save time
 	for (int i = 0; i < SPHERESIZE; i++)
 	{
 		sphereCollection[i] = new Sphere(m_pSphereMesh, m_pHeightMap);
@@ -416,8 +418,69 @@ void Application::HandleUpdate(float dT)
 
 //void Application::LoopSpheres()
 //{
-//	XMVECTOR boundingBottomLeftFront;
-//	XMVECTOR boundingTopRightBack;
+//	XMFLOAT3 boundingBottomLeftFront;
+//	XMFLOAT3 boundingTopRightBack;
+//	bool foundSphere = false;
+//	bool firstLoop = true;
+//	for (int i = 0; i < SPHERESIZE; i++)
+//	{
+//		if (sphereCollection[i]->mSphereAlive)
+//		{
+//			XMFLOAT3 currentSpherePos;
+//			XMStoreFloat3(&currentSpherePos, sphereCollection[i]->mSpherePos);
+//			if (firstLoop)
+//			{
+//				boundingBottomLeftFront = currentSpherePos;
+//				firstLoop = false;
+//			}
+//
+//			if (currentSpherePos.x < boundingBottomLeftFront.x)
+//			{
+//				boundingBottomLeftFront.x = currentSpherePos.x;
+//			}
+//			if (currentSpherePos.y < boundingBottomLeftFront.y)
+//			{
+//				boundingBottomLeftFront.y = currentSpherePos.y;
+//			}
+//			if (currentSpherePos.z < boundingBottomLeftFront.z)
+//			{
+//				boundingBottomLeftFront.z = currentSpherePos.z;
+//			}
+//			if (currentSpherePos.x > boundingTopRightBack.x)
+//			{
+//				boundingTopRightBack.x = currentSpherePos.x;
+//			}
+//			if (currentSpherePos.y > boundingTopRightBack.y)
+//			{
+//				boundingTopRightBack.y = currentSpherePos.y;
+//			}
+//			if (currentSpherePos.z > boundingTopRightBack.z)
+//			{
+//				boundingTopRightBack.z = currentSpherePos.z;
+//			}
+//			foundSphere = true;
+//		}
+//	}
+//	int nodes = 0;
+//	if (foundSphere)
+//	{
+//		Octree baseOct = Octree(XMLoadFloat3(&boundingBottomLeftFront), XMLoadFloat3(&boundingTopRightBack), 1);
+//		for (int i = 0; i < SPHERESIZE; i++)
+//		{
+//			if (sphereCollection[i]->mSphereAlive)
+//			{
+//				baseOct.AddNode(sphereCollection[i]);
+//				nodes++;
+//			}
+//			if (nodes > 3)
+//			{
+//
+//				int testInt = 0;
+//				testInt++;
+//			}
+//		}
+//	}
+//
 //	
 //}
 
@@ -474,7 +537,8 @@ bool Application::SphereSphereIntersection(SphereCollisionPair& collisionPair)
 	{
 		return false;
 	}
-	//maybe need b - a?
+
+	distance = sqrtf(distance);
 	collisionPair.normal = collisionNormal / distance;
 	collisionPair.penetration = radius - distance;
 

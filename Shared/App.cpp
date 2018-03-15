@@ -565,19 +565,26 @@ int Run(App *pApp)
 	LARGE_INTEGER nextUpdate;
 	QueryPerformanceCounter(&nextUpdate);
 	nextUpdate.QuadPart += oneFrame.QuadPart;
-	clock_t current_ticks, delta_ticks = clock();
-	clock_t fps = 0;
+	//clock_t current_ticks, delta_ticks = clock();
+
+	auto currentTime = std::chrono::high_resolution_clock::now();
+	auto oldTime = currentTime;
 
 	while (DoMessages())
 	{
 		// Wait until the next 60th-of-a-second boundary has
 		// arrived (or been and gone).
 		LARGE_INTEGER now;
-		current_ticks = clock();
 
-		float dT = (float)delta_ticks / 1000;
+		oldTime = currentTime;
+		currentTime = std::chrono::high_resolution_clock::now();
 
-		pApp->Update(dT);
+		float timeMs = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - oldTime).count() / 1000.0f;
+		//current_ticks = clock();
+
+		//float dT = (float)delta_ticks / 1000;
+
+		pApp->Update(timeMs);
 
 		pApp->Render();
 
@@ -595,8 +602,8 @@ int Run(App *pApp)
 		}
 
 		nextUpdate.QuadPart = now.QuadPart + oneFrame.QuadPart;
-		delta_ticks = clock() - current_ticks; //the time, in ms, that took to render the scene
-
+		//delta_ticks = clock() - current_ticks; //the time, in ms, that took to render the scene
+		//delt
 	}
 
 	pApp->Stop();

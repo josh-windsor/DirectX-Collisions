@@ -9,6 +9,7 @@ void Sphere::StartSphere(XMVECTOR iSpherePos)
 {
 	mSphereAlive = true;
 	mSpherePos = iSpherePos;
+	mSphereVel = XMVectorZero();
 }
 
 
@@ -80,8 +81,6 @@ bool Sphere::SphereTriangleIntersection(int nFaceIndex, XMVECTOR& collisionNorma
 	XMVECTOR vert1 = XMLoadFloat3(&m_pHeightMap->m_pFaceData[nFaceIndex].m_v1);
 	XMVECTOR vert2 = XMLoadFloat3(&m_pHeightMap->m_pFaceData[nFaceIndex].m_v2);
 
-	// Step 1: Calculate |COLNORM| 
-	// Note that the variable colNormN is passed through by reference as part of the function parameters so you can calculate and return it
 	collisionNormal = XMLoadFloat3(&m_pHeightMap->m_pFaceData[nFaceIndex].m_vNormal);
 
 	XMVECTOR p = ClosestPointToTriangle(vert0, vert1, vert2);
@@ -102,9 +101,45 @@ bool Sphere::SphereTriangleIntersection(int nFaceIndex, XMVECTOR& collisionNorma
 void Sphere::BounceSphereTri(XMVECTOR colNormN)
 {
 	float normalVelocityLength = XMVectorGetX(XMVector3Dot(-mSphereVel, colNormN));
+	if (normalVelocityLength < 0.0f)
+	{
+		return;
+	}
 	float push = (-1.6f * normalVelocityLength);
 	mSphereVel -= push * colNormN;
 	
+	XMVECTOR frictionT = -mSphereVel - (colNormN * XMVectorGetX(XMVector3Dot(-mSphereVel, colNormN)));
+
+	float frictionTLength = XMVectorGetX(XMVector3LengthSq(frictionT));
+	//the tangential speed is greater than 0 then we must apply friction impulse
+	if (frictionTLength > 0.0000001f)
+	{
+		frictionTLength = sqrtf(frictionTLength);
+		//friction normal to use in the impulse equation. Use the
+		//minus sign so that it points in the opposite direction
+		//of the tangential velocity vector
+		XMVECTOR frictionNormal = -frictionT / frictionTLength;
+		//the friction impulse. the tangential speed is the numerator
+		float frictionImpulse = frictionTLength / mInvMass;
+
+		//as when working with forces, if the friction impulse
+		//is greater than the normal impulse times the static
+		//friction coefficient, which means a slide, the
+		//friction impulse is the normal impulse times the
+		//dynamic friction coefficient else there's no change
+		//to do there
+		static float staticFriction = 0.3f;
+		static float dynamicFriction = 0.5f;
+		if (frictionImpulse > push * staticFriction)
+		{
+			frictionImpulse = push * dynamicFriction;
+		}
+		
+		XMVECTOR frictionImpulseVector = frictionNormal * frictionImpulse;
+
+		mSphereVel += frictionImpulseVector;
+		
+	}
 
 }
 
