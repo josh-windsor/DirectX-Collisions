@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <windows.h>
 #include <d3d11.h>
+#include <vector>
 #include "Sphere.h"
 
 #include "CommonApp.h"
@@ -31,6 +32,26 @@ class Sphere;
 
 #define SPHERESIZE 100
 
+__declspec(align(16)) struct SphereCollisionPair
+{
+	Sphere* firstSphere;
+	Sphere* secondSphere;
+	XMVECTOR normal;
+	float penetration;
+
+	void* operator new(size_t i)
+	{
+		return _mm_malloc(i, 16);
+	}
+
+	void operator delete(void* p)
+	{
+		_mm_free(p);
+	}
+
+};
+
+
 class Application:
 public CommonApp
 {
@@ -44,6 +65,13 @@ protected:
 private:
 
 	float m_frameCount;
+	int m_currentHeightmap = 0;
+	char* heightmaps[4] = {
+		"Resources/heightmap0.bmp",
+		"Resources/heightmap1.bmp",
+		"Resources/heightmap2.bmp",
+		"Resources/heightmap3.bmp"
+	};
 
 	bool m_reload;
 
@@ -56,11 +84,16 @@ private:
 	HeightMap* m_pHeightMap;
 	
 	Sphere* sphereCollection[SPHERESIZE] = {nullptr};
+	std::vector<SphereCollisionPair> collisionPairs;
+
 	CommonMesh* m_pSphereMesh;
 	void CreateSphere(XMFLOAT3 iSpherePos);
-	//bool SphereSphereIntersection(Sphere* sphere1, Sphere* sphere2, XMVECTOR& colN, float& distance);
-	//void PositionalCorrection(Sphere* sphere1, Sphere* sphere2, float penetration, XMVECTOR& colNormN);
+	bool SphereSphereIntersection(SphereCollisionPair& collisionPair);
+	void BounceSpheres(SphereCollisionPair& collisionPair);
+	void PositionalCorrection(SphereCollisionPair& collisionPair);
 	void LoopSpheres();
+	void CheckSphereCollisions();
+
 
 	void ReloadShaders();
 };

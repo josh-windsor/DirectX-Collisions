@@ -1,5 +1,6 @@
 #include "Application.h"
 #include "HeightMap.h"
+#include "Octree.h"
 
 
 Application* Application::s_pApp = NULL;
@@ -17,7 +18,7 @@ bool Application::HandleStart()
 	m_frameCount = 0.0f;
 
 	m_bWireframe = true;
-	m_pHeightMap = new HeightMap( "Resources/heightmap.bmp", 2.0f, 0.75f );
+	m_pHeightMap = new HeightMap( "Resources/heightmap0.bmp", 2.0f, 0.75f );
 
 	m_pSphereMesh = CommonMesh::NewSphereMesh(this, 1.0f, 16, 16);
 
@@ -35,7 +36,11 @@ bool Application::HandleStart()
 
 	m_cameraState = CAMERA_ROTATE;
 
-
+	//create all at beginning to save time
+	for (int i = 0; i < SPHERESIZE; i++)
+	{
+		sphereCollection[i] = new Sphere(m_pSphereMesh, m_pHeightMap);
+	}
 
 
 	return true;
@@ -43,14 +48,14 @@ bool Application::HandleStart()
 
 void Application::CreateSphere(XMFLOAT3 iSpherePos)
 {
-	Sphere * newSphere = new Sphere(iSpherePos, XMFLOAT3(0.0f, 0.2f, 0.0f), m_pSphereMesh, m_pHeightMap);
 	static int lastIndex = 0;
 	for (int i = 0; i < SPHERESIZE; i++)
 	{
 
-		if (sphereCollection[i] == nullptr)
+		if (!sphereCollection[i]->mSphereAlive)
 		{
-			sphereCollection[i] = newSphere;
+			
+			sphereCollection[i]->StartSphere(XMLoadFloat3(&iSpherePos));
 			return;
 		}
 	}
@@ -59,7 +64,7 @@ void Application::CreateSphere(XMFLOAT3 iSpherePos)
 		lastIndex = 0;
 	}
 	delete(sphereCollection[lastIndex]);
-	sphereCollection[lastIndex] = newSphere;
+	sphereCollection[lastIndex]->StartSphere(XMLoadFloat3(&iSpherePos));
 	lastIndex++;
 
 
@@ -371,91 +376,200 @@ void Application::HandleUpdate(float dT)
 	}
 	if ((this->IsKeyPressed(' ') && over1) || !this->IsKeyPressed(' '))
 	{
-		LoopSpheres();
+		//LoopSpheres();
 		for (Sphere* sphere : sphereCollection)
 		{
-			if (sphere != nullptr)
+			if (sphere->mSphereAlive)
 			{
-				sphere->CheckCollision();
 
 				sphere->Update(dT);
 			}
 
 		}
+		LoopSpheres();
+		CheckSphereCollisions();
 
 	}
+
+	static bool dbL = false;
+	if (this->IsKeyPressed('L'))
+	{
+		if (dbL == false)
+		{
+			delete(m_pHeightMap);
+			m_currentHeightmap++;
+			if (m_currentHeightmap > 3)
+			{
+				m_currentHeightmap = 0;
+			}
+			m_pHeightMap = new HeightMap(heightmaps[m_currentHeightmap], 2.0f, 0.75f);
+			m_pHeightMap->RebuildVertexData();
+		}
+	}
+	else
+	{
+		dbL = false;
+	}
+
+
 
 	
 }
 
+//void Application::LoopSpheres()
+//{
+//	XMFLOAT3 boundingBottomLeftFront;
+//	XMFLOAT3 boundingTopRightBack;
+//	bool foundSphere = false;
+//	bool firstLoop = true;
+//	for (int i = 0; i < SPHERESIZE; i++)
+//	{
+//		if (sphereCollection[i]->mSphereAlive)
+//		{
+//			XMFLOAT3 currentSpherePos;
+//			XMStoreFloat3(&currentSpherePos, sphereCollection[i]->mSpherePos);
+//			if (firstLoop)
+//			{
+//				boundingBottomLeftFront = currentSpherePos;
+//				firstLoop = false;
+//			}
+//
+//			if (currentSpherePos.x < boundingBottomLeftFront.x)
+//			{
+//				boundingBottomLeftFront.x = currentSpherePos.x;
+//			}
+//			if (currentSpherePos.y < boundingBottomLeftFront.y)
+//			{
+//				boundingBottomLeftFront.y = currentSpherePos.y;
+//			}
+//			if (currentSpherePos.z < boundingBottomLeftFront.z)
+//			{
+//				boundingBottomLeftFront.z = currentSpherePos.z;
+//			}
+//			if (currentSpherePos.x > boundingTopRightBack.x)
+//			{
+//				boundingTopRightBack.x = currentSpherePos.x;
+//			}
+//			if (currentSpherePos.y > boundingTopRightBack.y)
+//			{
+//				boundingTopRightBack.y = currentSpherePos.y;
+//			}
+//			if (currentSpherePos.z > boundingTopRightBack.z)
+//			{
+//				boundingTopRightBack.z = currentSpherePos.z;
+//			}
+//			foundSphere = true;
+//		}
+//	}
+//	int nodes = 0;
+//	if (foundSphere)
+//	{
+//		Octree baseOct = Octree(XMLoadFloat3(&boundingBottomLeftFront), XMLoadFloat3(&boundingTopRightBack), 1);
+//		for (int i = 0; i < SPHERESIZE; i++)
+//		{
+//			if (sphereCollection[i]->mSphereAlive)
+//			{
+//				baseOct.AddNode(sphereCollection[i]);
+//				nodes++;
+//			}
+//			if (nodes > 3)
+//			{
+//
+//				int testInt = 0;
+//				testInt++;
+//			}
+//		}
+//	}
+//
+//	
+//}
+
 void Application::LoopSpheres() 
 {
-	for (int i = 0; i < SPHERESIZE; i++)
+	for (int i = 0; i < SPHERESIZE; ++i)
 	{
-		if (sphereCollection[i] != nullptr)
+		if (sphereCollection[i]->mSphereAlive)
 		{
 			Sphere* sphere1 = sphereCollection[i];
 
-			for (int j = i + 1; j < SPHERESIZE; j++)
+			for (int j = 1; j < SPHERESIZE; ++j)
 			{
-				if (sphereCollection[j] != nullptr && sphereCollection[i] != sphereCollection[j])
+				if (sphereCollection[j]->mSphereAlive && sphereCollection[i] != sphereCollection[j])
 				{
-					Sphere* sphere2 = sphereCollection[j];
-					XMVECTOR colNorm;
-					float distance;
-					if (sphere1->SphereSphereIntersection(sphere2, colNorm, distance))
-					{
-						PositionalCorrection(sphere1, sphere2, 1 - distance, colNorm / sqrtf(distance));
-
-						sphere1->Bounce(colNorm);
-						sphere2->Bounce(-colNorm);
-
-					}
-
+					SphereCollisionPair newPair;
+					newPair.firstSphere = sphereCollection[i];
+					newPair.secondSphere = sphereCollection[j];
+					newPair.normal = XMVectorZero();
+					newPair.penetration = 0.0f;
+					collisionPairs.push_back(newPair);
 				}
 			}
 		}
 	}
+
 }
 
-/*bool Application::SphereSphereIntersection(Sphere* sphere1, Sphere* sphere2, XMVECTOR& colN, float& distance) 
+void Application::CheckSphereCollisions() 
 {
-	XMVECTOR vecSphere1Pos = XMLoadFloat3(&sphere1->mSpherePos);
-	XMVECTOR vecSphere2Pos = XMLoadFloat3(&sphere2->mSpherePos);
-	colN = vecSphere2Pos - vecSphere1Pos;
-
-	distance = XMVectorGetX(XMVector3LengthSq(colN));
-
-	float radius = sphere1->mRadius + sphere2->mRadius;
-	radius = radius * radius;
-
-	if (distance < radius)
+	for (SphereCollisionPair sCP : collisionPairs)
 	{
-		return true;
+		if (SphereSphereIntersection(sCP))
+
+		{
+			BounceSpheres(sCP);
+			PositionalCorrection(sCP);
+		}
+	}
+	collisionPairs.clear();
+}
+
+bool Application::SphereSphereIntersection(SphereCollisionPair& collisionPair)
+{
+
+	XMVECTOR collisionNormal = collisionPair.firstSphere->mSpherePos - collisionPair.secondSphere->mSpherePos;
+
+	float distance = XMVectorGetX(XMVector3LengthSq(collisionNormal));
+
+	float radius = collisionPair.firstSphere->mRadius + collisionPair.secondSphere->mRadius;
+	float radiusSqr = radius * radius;
+
+	if (distance > radiusSqr)
+	{
+		return false;
 	}
 
-	return false;
+	distance = sqrtf(distance);
+	collisionPair.normal = collisionNormal / distance;
+	collisionPair.penetration = radius - distance;
 
-}*/
+	return true;
 
-/*void Application::PositionalCorrection(Sphere* sphere1, Sphere* sphere2, float penetration, XMVECTOR& colNormN)
+}
+
+void Application::BounceSpheres(SphereCollisionPair& collisionPair)
 {
-	const float percent = 0.3; // usually 20% to 80%
-	const float slop = 0.05; // usually 0.01 to 0.1
-	XMVECTOR vecCorrection = max(penetration - slop, 0.0f) / (sphere1->mMass + sphere2->mMass) * penetration * colNormN;
-	XMVECTOR vecSpherePos = XMLoadFloat3(&sphere1->mSpherePos);
-	XMVECTOR vecSpherePos2 = XMLoadFloat3(&sphere2->mSpherePos);
+	float normalVelocityLength = XMVectorGetX(XMVector3Dot((collisionPair.secondSphere->mSphereVel - collisionPair.firstSphere->mSphereVel), collisionPair.normal));
 
-	XMVECTOR vecCorrected = vecSpherePos - vecCorrection;
-	XMVECTOR vecCorrected2 = vecSpherePos2 + vecCorrection;
 
-	XMFLOAT3 correctionF, correctionF2;
-	XMStoreFloat3(&correctionF, vecCorrected);
-	XMStoreFloat3(&correctionF2, vecCorrected2);
+	float u = (-1.5f * normalVelocityLength) / (collisionPair.firstSphere->mInvMass + collisionPair.secondSphere->mInvMass);
 
-	sphere1->mSpherePos = correctionF;
-	sphere2->mSpherePos = correctionF2;
-}*/
+
+	XMVECTOR push = u * collisionPair.normal;
+
+	collisionPair.firstSphere->mSphereVel -= push;
+	collisionPair.secondSphere->mSphereVel += push;
+
+}
+
+void Application::PositionalCorrection(SphereCollisionPair& collisionPair)
+{
+	const float percent = 0.99f; // usually 20% to 80%
+	const float slop = 0.001f; // usually 0.01 to 0.1
+	XMVECTOR vecCorrection = max(collisionPair.penetration - slop, 0.0f) / (collisionPair.firstSphere->mInvMass + collisionPair.secondSphere->mInvMass) * percent * collisionPair.normal;
+
+	collisionPair.firstSphere->mSpherePos  += vecCorrection;
+	collisionPair.secondSphere->mSpherePos -= vecCorrection;
+}
 
 
 
@@ -498,18 +612,13 @@ void Application::HandleRender()
 
 	for (Sphere* sphere : sphereCollection)
 	{
-		if (sphere != nullptr)
+		if (sphere->mSphereAlive)
 		{
 
 			XMMATRIX worldMtx;
-
-			worldMtx = XMMatrixTranslation(sphere->mSpherePos.x, sphere->mSpherePos.y, sphere->mSpherePos.z);
-
-			this->SetWorldMatrix(worldMtx);
-			SetDepthStencilState(false, false);
-
-			sphere->Draw();
-
+			XMFLOAT3 fSpherePos;
+			XMStoreFloat3(&fSpherePos, sphere->mSpherePos);
+			worldMtx = XMMatrixTranslation(fSpherePos.x, fSpherePos.y, fSpherePos.z);
 
 			this->SetWorldMatrix(worldMtx);
 			SetDepthStencilState(true, true);
