@@ -63,7 +63,6 @@ void Application::CreateSphere(XMFLOAT3 iSpherePos)
 	{
 		lastIndex = 0;
 	}
-	delete(sphereCollection[lastIndex]);
 	sphereCollection[lastIndex]->StartSphere(XMLoadFloat3(&iSpherePos));
 	lastIndex++;
 
@@ -404,6 +403,12 @@ void Application::HandleUpdate(float dT)
 			}
 			m_pHeightMap = new HeightMap(heightmaps[m_currentHeightmap], 2.0f, 0.75f);
 			m_pHeightMap->RebuildVertexData();
+			for (Sphere* sphere : sphereCollection)
+			{
+				sphere->m_pHeightMap = m_pHeightMap;
+			}
+
+			dbL = true;
 		}
 	}
 	else
@@ -416,75 +421,76 @@ void Application::HandleUpdate(float dT)
 	
 }
 
-//void Application::LoopSpheres()
-//{
-//	XMFLOAT3 boundingBottomLeftFront;
-//	XMFLOAT3 boundingTopRightBack;
-//	bool foundSphere = false;
-//	bool firstLoop = true;
-//	for (int i = 0; i < SPHERESIZE; i++)
-//	{
-//		if (sphereCollection[i]->mSphereAlive)
-//		{
-//			XMFLOAT3 currentSpherePos;
-//			XMStoreFloat3(&currentSpherePos, sphereCollection[i]->mSpherePos);
-//			if (firstLoop)
-//			{
-//				boundingBottomLeftFront = currentSpherePos;
-//				firstLoop = false;
-//			}
-//
-//			if (currentSpherePos.x < boundingBottomLeftFront.x)
-//			{
-//				boundingBottomLeftFront.x = currentSpherePos.x;
-//			}
-//			if (currentSpherePos.y < boundingBottomLeftFront.y)
-//			{
-//				boundingBottomLeftFront.y = currentSpherePos.y;
-//			}
-//			if (currentSpherePos.z < boundingBottomLeftFront.z)
-//			{
-//				boundingBottomLeftFront.z = currentSpherePos.z;
-//			}
-//			if (currentSpherePos.x > boundingTopRightBack.x)
-//			{
-//				boundingTopRightBack.x = currentSpherePos.x;
-//			}
-//			if (currentSpherePos.y > boundingTopRightBack.y)
-//			{
-//				boundingTopRightBack.y = currentSpherePos.y;
-//			}
-//			if (currentSpherePos.z > boundingTopRightBack.z)
-//			{
-//				boundingTopRightBack.z = currentSpherePos.z;
-//			}
-//			foundSphere = true;
-//		}
-//	}
-//	int nodes = 0;
-//	if (foundSphere)
-//	{
-//		Octree baseOct = Octree(XMLoadFloat3(&boundingBottomLeftFront), XMLoadFloat3(&boundingTopRightBack), 1);
-//		for (int i = 0; i < SPHERESIZE; i++)
-//		{
-//			if (sphereCollection[i]->mSphereAlive)
-//			{
-//				baseOct.AddNode(sphereCollection[i]);
-//				nodes++;
-//			}
-//			if (nodes > 3)
-//			{
-//
-//				int testInt = 0;
-//				testInt++;
-//			}
-//		}
-//	}
-//
-//	
-//}
+/*void Application::LoopSpheres()
+{
+	XMFLOAT3 boundingBottomLeftFront;
+	XMFLOAT3 boundingTopRightBack;
+	bool foundSphere = false;
+	bool firstLoop = true;
+	for (int i = 0; i < SPHERESIZE; i++)
+	{
+		if (sphereCollection[i]->mSphereAlive)
+		{
+			XMFLOAT3 currentSpherePos;
+			XMStoreFloat3(&currentSpherePos, sphereCollection[i]->mSpherePos);
+			if (firstLoop)
+			{
+				boundingBottomLeftFront = currentSpherePos;
+				firstLoop = false;
+			}
 
-void Application::LoopSpheres() 
+			if (currentSpherePos.x < boundingBottomLeftFront.x)
+			{
+				boundingBottomLeftFront.x = currentSpherePos.x;
+			}
+			if (currentSpherePos.y < boundingBottomLeftFront.y)
+			{
+				boundingBottomLeftFront.y = currentSpherePos.y;
+			}
+			if (currentSpherePos.z < boundingBottomLeftFront.z)
+			{
+				boundingBottomLeftFront.z = currentSpherePos.z;
+			}
+			if (currentSpherePos.x > boundingTopRightBack.x)
+			{
+				boundingTopRightBack.x = currentSpherePos.x;
+			}
+			if (currentSpherePos.y > boundingTopRightBack.y)
+			{
+				boundingTopRightBack.y = currentSpherePos.y;
+			}
+			if (currentSpherePos.z > boundingTopRightBack.z)
+			{
+				boundingTopRightBack.z = currentSpherePos.z;
+			}
+			foundSphere = true;
+		}
+	}
+	int nodes = 0;
+	if (foundSphere)
+	{
+		Octree baseOct = Octree(XMLoadFloat3(&boundingBottomLeftFront), XMLoadFloat3(&boundingTopRightBack), 1);
+		for (int i = 0; i < SPHERESIZE; i++)
+		{
+			if (sphereCollection[i]->mSphereAlive)
+			{
+				baseOct.AddNode(sphereCollection[i]);
+				nodes++;
+			}
+			if (nodes > 3)
+			{
+
+				int testInt = 0;
+				testInt++;
+			}
+		}
+	}
+
+	
+}*/
+
+
+/*void Application::LoopSpheres() 
 {
 	for (int i = 0; i < SPHERESIZE; ++i)
 	{
@@ -507,7 +513,7 @@ void Application::LoopSpheres()
 		}
 	}
 
-}
+}*/
 
 void Application::CheckSphereCollisions() 
 {
@@ -563,8 +569,8 @@ void Application::BounceSpheres(SphereCollisionPair& collisionPair)
 
 void Application::PositionalCorrection(SphereCollisionPair& collisionPair)
 {
-	const float percent = 0.99f; // usually 20% to 80%
-	const float slop = 0.001f; // usually 0.01 to 0.1
+	const float percent = 0.90f; 
+	const float slop = 0.001f;
 	XMVECTOR vecCorrection = max(collisionPair.penetration - slop, 0.0f) / (collisionPair.firstSphere->mInvMass + collisionPair.secondSphere->mInvMass) * percent * collisionPair.normal;
 
 	collisionPair.firstSphere->mSpherePos  += vecCorrection;

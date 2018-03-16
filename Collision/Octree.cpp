@@ -2,15 +2,11 @@
 
 
 
-Octree::Octree(XMVECTOR iBoundingBottomLeftFront, XMVECTOR iBoundingTopRightBack, int iDepth) 
-	:
-	boundingBottomLeftFront(iBoundingBottomLeftFront),
-	depth(iDepth)
+Octree::Octree(XMFLOAT3 iCenterPoint, float iSideLength)
 {
-	XMVECTOR vecCentralPoint = (iBoundingBottomLeftFront + iBoundingTopRightBack) / 2;
-	XMStoreFloat3(&centralPoint, vecCentralPoint);
-	sideLength = XMVectorGetX(iBoundingTopRightBack) - XMVectorGetX(iBoundingBottomLeftFront);
 	
+	centralPoint = iCenterPoint;
+	sideLength = iSideLength;
 }
 
 
@@ -18,104 +14,96 @@ Octree::~Octree()
 {
 }
 
-void Octree::AddNode(Sphere* iNode) 
+Octree* Octree::BuildSubNode(XMFLOAT3 iCenterPoint, float iSideLength, int iMaxDepth)
 {
-	if (depth == depthLimit)
+	if (iMaxDepth >= 0)
 	{
-		nodes.push_back(iNode);
+		Octree* newNode = new Octree(iCenterPoint, iSideLength);
+
+		XMFLOAT3 offset;
+		float step = iSideLength * 0.5f;
+
+		for (int i = 0; i < 8; ++i)
+		{
+			offset.x = ((i & 1)) ? step : -step;
+			offset.y = ((i & 2)) ? step : -step;
+			offset.z = ((i & 4)) ? step : -step;
+
+			newNode->children[i] = BuildSubNode(iCenterPoint + offset, step, iMaxDepth--);
+		}
+		return newNode;
+	}
+	return nullptr;
+}
+
+void Octree::AddNode(Octree* root, Sphere* iNode) 
+{
+	int index = 0;
+	bool straddle = false;
+
+
+	float objectPosition[3];
+	float rootPosition[3];
+
+	XMFLOAT3 f_objectPosition;
+	XMStoreFloat3(&f_objectPosition, iNode->mSpherePos);
+
+	XMFLOAT3 f_rootPosition = root->centralPoint;
+
+	
+	memcpy_s(objectPosition, sizeof(objectPosition), &f_objectPosition, sizeof(XMFLOAT3));
+	memcpy_s(rootPosition  , sizeof(rootPosition  ), &f_rootPosition  , sizeof(XMFLOAT3));
+
+
+	for (int i = 0; i < 3; ++i)
+	{
+		float d = objectPosition[i] - rootPosition[i];
+		if (fabs(d) <= iNode->mRadius)
+		{
+			straddle = true;
+			break;
+		}
+
+		if (d > 0.0f)
+		{
+			index |= (1 << i);
+		}
+
+	}
+	if (!straddle && root->children[index])
+	{
+		AddNode(root->children[index], iNode);
 	}
 	else
 	{
-		if (nodes.size() < 1)
-		{
-			nodes.push_back(iNode);
-		}
-		else
-		{
-			XMFLOAT3 nodePosition;
-			XMStoreFloat3(&nodePosition, iNode->mSpherePos);
-			if (nodePosition.x < centralPoint.x)
-			{
-				if (nodePosition.y < centralPoint.y)
-				{
-					if (nodePosition.z < centralPoint.z)
-					{
-						//return 0;
-						AddToChild(0, boundingBottomLeftFront, XMLoadFloat3(&centralPoint), iNode);
-					}
-					else
-					{
-						//return 4;
-						XMVECTOR correctionVec = XMLoadFloat3(&XMFLOAT3(0, 0, sideLength / 2));
-						AddToChild(4, boundingBottomLeftFront + correctionVec, XMLoadFloat3(&centralPoint) + correctionVec, iNode);
-					}
-				}
-				else
-				{
-					if (nodePosition.z < centralPoint.z)
-					{
-						//return 2;
-						XMVECTOR correctionVec = XMLoadFloat3(&XMFLOAT3(0, sideLength / 2, 0));
-						AddToChild(2, boundingBottomLeftFront + correctionVec, XMLoadFloat3(&centralPoint) + correctionVec, iNode);
-					}
-					else
-					{
-						//return 6;
-						XMVECTOR correctionVec = XMLoadFloat3(&XMFLOAT3(0, sideLength / 2, sideLength / 2));
-						AddToChild(6, boundingBottomLeftFront + correctionVec, XMLoadFloat3(&centralPoint) + correctionVec, iNode);
-					}
-				}
-			}
-			else
-			{
-				if (nodePosition.y < centralPoint.y)
-				{
-					if (nodePosition.z < centralPoint.z)
-					{
-						//return 1;
-						XMVECTOR correctionVec = XMLoadFloat3(&XMFLOAT3(sideLength / 2, 0, 0));
-						AddToChild(1, boundingBottomLeftFront + correctionVec, XMLoadFloat3(&centralPoint) + correctionVec, iNode);
-					}
-					else
-					{
-						//return 5;
-						XMVECTOR correctionVec = XMLoadFloat3(&XMFLOAT3(sideLength / 2, 0, sideLength / 2));
-						AddToChild(5, boundingBottomLeftFront + correctionVec, XMLoadFloat3(&centralPoint) + correctionVec, iNode);
-					}
-				}
-				else
-				{
-					if (nodePosition.z < centralPoint.z)
-					{
-						//return 3;
-						XMVECTOR correctionVec = XMLoadFloat3(&XMFLOAT3(sideLength / 2, sideLength / 2, 0));
-						AddToChild(3, boundingBottomLeftFront + correctionVec, XMLoadFloat3(&centralPoint) + correctionVec, iNode);
-					}
-					else
-					{
-						//return 7;
-						XMVECTOR correctionVec = XMLoadFloat3(&XMFLOAT3(sideLength / 2, sideLength / 2, sideLength / 2));
-						AddToChild(7, boundingBottomLeftFront + correctionVec, XMLoadFloat3(&centralPoint) + correctionVec, iNode);
-					}
-				}
-			}
-			nodes.push_back(iNode);
-			if (nodes.size() == 1)
-			{
-				Sphere* oldSphere = nodes[0];
-				AddNode(oldSphere);
-				//nodes.clear();
-			}
+		iNode->mNextObj = root->sphereList;
+		root->sphereList = iNode;
+	}
 
+}
+
+void Octree::CleanTree(Octree* root)
+{
+	if (root)
+	{
+		for (int i = 0; i < 8; ++i)
+		{
+			if (root->children[i] != nullptr)
+			{
+				CleanTree(root->children[i]);
+				delete root->children[i];
+			}
 		}
 	}
 }
 
-void Octree::AddToChild(int subSection, XMVECTOR iBoundingBottomLeftFront, XMVECTOR iBoundingTopRightBack, Sphere* iNode)
+XMFLOAT3 static operator+ (const XMFLOAT3 a, const XMFLOAT3 b) 
 {
-	if (children[subSection] == nullptr)
-	{
-		children[subSection] = new Octree(iBoundingBottomLeftFront, iBoundingTopRightBack, depth + 1);
-	}
-	children[subSection]->AddNode(iNode);
+	XMFLOAT3 output;
+	output.x = a.x + b.x;
+	output.y = a.y + b.y;
+	output.z = a.z + b.z;
+	return output;
+
+
 }

@@ -15,19 +15,25 @@ using namespace DirectX;
 class Octree
 {
 public:
-	Octree(XMVECTOR iBoundingBottomLeftFront, XMVECTOR iBoundingTopRightBack, int iDepth);
+	Octree(XMFLOAT3 iCenterPoint, float iSideLength);
 	~Octree();
-	void AddNode(Sphere* iNode);
-	void AddToChild(int subSection, XMVECTOR iBoundingBottomLeftFront, XMVECTOR iBoundingTopRightBack, Sphere* iNode);
 
-	const int depthLimit = 10;
+	Octree* BuildSubNode(XMFLOAT3 iCenterPoint, float iSideLength, int iDepth);
+	void AddNode(Octree* root, Sphere* iNode);
+	void CleanTree(Octree* root);
 
-	Octree* children[8] = { nullptr };
-	float sideLength;
-	std::vector<Sphere*> nodes;
-	int depth;
+
 private:
-	const XMVECTOR boundingBottomLeftFront;
+
+	Octree * children[8] = { nullptr };
+
+	Sphere* sphereList;
+
 	XMFLOAT3 centralPoint;
+	float sideLength;
+
+	static const int depthLimit = 5;
+
+
 };
 
