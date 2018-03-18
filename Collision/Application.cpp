@@ -481,11 +481,11 @@ void Application::HandleUpdate(float dT)
 	
 }
 
-/*void Application::LoopSpheres()
+void Application::LoopSpheres()
 {
 	XMFLOAT3 boundingBottomLeftFront;
 	XMFLOAT3 boundingTopRightBack;
-	bool foundSphere = false;
+	int spheresFound = 0;
 	bool firstLoop = true;
 	for (int i = 0; i < SPHERESIZE; i++)
 	{
@@ -523,34 +523,72 @@ void Application::HandleUpdate(float dT)
 			{
 				boundingTopRightBack.z = currentSpherePos.z;
 			}
-			foundSphere = true;
+			spheresFound++;
 		}
 	}
 	int nodes = 0;
-	if (foundSphere)
+	if (spheresFound > 1)
 	{
-		Octree baseOct = Octree(XMLoadFloat3(&boundingBottomLeftFront), XMLoadFloat3(&boundingTopRightBack), 1);
+		XMVECTOR v_boundingBottomLeftFront = XMLoadFloat3(&boundingBottomLeftFront);
+		XMVECTOR v_boundingTopRightBack = XMLoadFloat3(&boundingTopRightBack);
+		XMVECTOR v_centralP = (v_boundingBottomLeftFront + v_boundingTopRightBack) / 2;
+		XMFLOAT3 f_centralP;
+		XMStoreFloat3(&f_centralP, v_centralP);
+		Octree baseOct = Octree();
+
+		Octree* newOct = baseOct.BuildSubNode(f_centralP, fabs(boundingBottomLeftFront.x - boundingTopRightBack.x), 2);
+
+
 		for (int i = 0; i < SPHERESIZE; i++)
 		{
 			if (sphereCollection[i]->mSphereAlive)
 			{
-				baseOct.AddNode(sphereCollection[i]);
-				nodes++;
-			}
-			if (nodes > 3)
-			{
-
-				int testInt = 0;
-				testInt++;
+				newOct->AddNode(newOct, sphereCollection[i]);
 			}
 		}
+		TestCollisions(newOct);
+
+
+
 	}
 
 	
-}*/
+}
+
+void Application::TestCollisions(Octree* root)
+{
+	const int MAX_DEPTH = 2;
+
+	static Octree *ancestorStack[MAX_DEPTH];
+	static int depth = 0;
+
+	ancestorStack[depth++] = root;
+	for (int n = 0; n < depth; n++) {
+		Sphere *pA, *pB;
+		for (pA = ancestorStack[n]->sphereList; pA != nullptr; pA = pA->mNextObj) {
+			for (pB = root->sphereList; pB; pB = pB->mNextObj) {
+				// Avoid testing both A->B and B->A
+				if (pA == pB) break;
+				// Now perform the collision test between pA and pB in some manner
+				SphereCollisionPair newPair;
+				newPair.firstSphere = pA;
+				newPair.secondSphere = pB;
+				newPair.normal = XMVectorZero();
+				newPair.penetration = 0.0f;
+				collisionPairs.push_back(newPair);
+			}
+		}
+	}
+	// Recursively visit all existing children
+	for (int i = 0; i < 8; i++)
+		if (root->children[i])
+			TestCollisions(root->children[i]);
+	// Remove current node from ancestor stack before returning
+	depth--;
+}
 
 
-void Application::LoopSpheres() 
+/*void Application::LoopSpheres() 
 {
 	for (int i = 0; i < SPHERESIZE; ++i)
 	{
@@ -573,10 +611,11 @@ void Application::LoopSpheres()
 		}
 	}
 
-}
+}*/
 
 void Application::CheckSphereCollisions() 
 {
+	int testPairs = 0;
 	for (SphereCollisionPair sCP : collisionPairs)
 	{
 		if (SphereSphereIntersection(sCP))
@@ -584,8 +623,11 @@ void Application::CheckSphereCollisions()
 		{
 			BounceSpheres(sCP);
 			PositionalCorrection(sCP);
+			
 		}
+		testPairs++;
 	}
+	dprintf("%i\n", testPairs);
 	collisionPairs.clear();
 }
 

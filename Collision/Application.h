@@ -10,6 +10,7 @@
 #include <d3d11.h>
 #include <vector>
 #include "Sphere.h"
+#include "Octree.h"
 
 #include "CommonApp.h"
 #include "CommonMesh.h"
@@ -91,6 +92,8 @@ private:
 	bool SphereSphereIntersection(SphereCollisionPair& collisionPair);
 	void BounceSpheres(SphereCollisionPair& collisionPair);
 	void PositionalCorrection(SphereCollisionPair& collisionPair);
+	void TestCollisions(Octree* root);
+
 	void LoopSpheres();
 	void CheckSphereCollisions();
 

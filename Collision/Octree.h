@@ -16,18 +16,19 @@ class Octree
 {
 public:
 	Octree(XMFLOAT3 iCenterPoint, float iSideLength);
+	Octree();
 	~Octree();
 
 	Octree* BuildSubNode(XMFLOAT3 iCenterPoint, float iSideLength, int iDepth);
 	void AddNode(Octree* root, Sphere* iNode);
 	void CleanTree(Octree* root);
+	Sphere* sphereList = nullptr;
+	Octree * children[8] = { nullptr };
 
 
 private:
 
-	Octree * children[8] = { nullptr };
 
-	Sphere* sphereList;
 
 	XMFLOAT3 centralPoint;
 	float sideLength;

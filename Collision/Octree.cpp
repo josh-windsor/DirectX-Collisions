@@ -14,6 +14,8 @@ Octree::~Octree()
 {
 }
 
+Octree::Octree() {}
+
 Octree* Octree::BuildSubNode(XMFLOAT3 iCenterPoint, float iSideLength, int iMaxDepth)
 {
 	if (iMaxDepth >= 0)
@@ -29,7 +31,7 @@ Octree* Octree::BuildSubNode(XMFLOAT3 iCenterPoint, float iSideLength, int iMaxD
 			offset.y = ((i & 2)) ? step : -step;
 			offset.z = ((i & 4)) ? step : -step;
 
-			newNode->children[i] = BuildSubNode(iCenterPoint + offset, step, iMaxDepth--);
+			newNode->children[i] = BuildSubNode(iCenterPoint + offset, step, iMaxDepth- 1);
 		}
 		return newNode;
 	}
