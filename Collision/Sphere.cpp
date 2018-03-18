@@ -25,7 +25,12 @@ void Sphere::Update(float dT)
 		mSphereVel += mGravityAcc * dT; // The new velocity gets passed through to the collision so it can base its predictions on our speed NEXT FRAME
 		mSpherePos += mSphereVel * dT; // Really important that we add LAST FRAME'S velocity as this was how fast the collision is expecting the ball to move
 
-
+		
+		if (XMVectorGetY(mSpherePos) < -10.0f)
+		{
+			mSphereAlive = false;
+			return;
+		}
 
 		mSphereSpeed = XMVectorGetX(XMVector3Length(mSphereVel));
 		float penetration;

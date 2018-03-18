@@ -42,6 +42,12 @@ bool Application::HandleStart()
 		sphereCollection[i] = new Sphere(m_pSphereMesh, m_pHeightMap);
 	}
 
+	XMFLOAT3* triangle[5];
+	m_pHeightMap->GetTriangle(0, triangle);
+
+	CreateSphere(XMFLOAT3(triangle[0]->x, 20.f, triangle[0]->z));
+
+
 
 	return true;
 }
@@ -163,11 +169,10 @@ void Application::HandleUpdate(float dT)
 	{
 		if( dbR == false )
 		{
-			static int dx = 0;
-			static int dy = 0;
 			XMFLOAT3 mSpherePos = XMFLOAT3((float)((rand() % 14 - 7.0f) - 0.5), 20.0f, (float)((rand() % 14 - 7.0f) - 0.5));
-
-			CreateSphere(mSpherePos);
+			sphereCollection[0]->mSpherePos = XMLoadFloat3(&mSpherePos);
+			sphereCollection[0]->mSphereAlive = true;
+			sphereCollection[0]->mSphereVel = XMVectorZero();
 			dbR = true;
 		}
 	}
@@ -183,9 +188,12 @@ void Application::HandleUpdate(float dT)
 		{
 			static int dx = 0;
 			static int dy = 0;
-			XMFLOAT3 mSpherePos = XMFLOAT3(mSpherePos.x, 20.0f, mSpherePos.z);
+			XMFLOAT3 mSpherePos = XMFLOAT3(XMVectorGetX(sphereCollection[0]->mSpherePos), 20.0f, XMVectorGetZ(sphereCollection[0]->mSpherePos));
 
-			CreateSphere(mSpherePos);
+			sphereCollection[0]->mSpherePos = XMLoadFloat3(&mSpherePos);
+			sphereCollection[0]->mSphereAlive = true;
+			sphereCollection[0]->mSphereVel = XMVectorZero();
+
 
 			dbT = true;
 		}
@@ -219,7 +227,9 @@ void Application::HandleUpdate(float dT)
 			else
 				mSpherePos = XMFLOAT3(((dx - 7.0f) * 2) + 0.5f, 20.0f, ((dy - 7.0f) * 2) + 0.5f);
 
-			CreateSphere(mSpherePos);
+			sphereCollection[0]->mSpherePos = XMLoadFloat3(&mSpherePos);
+			sphereCollection[0]->mSphereAlive = true;
+			sphereCollection[0]->mSphereVel = XMVectorZero();
 			dbN = true;
 		}
 	}
@@ -249,7 +259,9 @@ void Application::HandleUpdate(float dT)
 
 
 			vertexIndex = 0;
-			CreateSphere(mSpherePos);
+			sphereCollection[0]->mSpherePos = XMLoadFloat3(&mSpherePos);
+			sphereCollection[0]->mSphereAlive = true;
+			sphereCollection[0]->mSphereVel = XMVectorZero();
 
 			dbU = true;
 		}
@@ -278,7 +290,9 @@ void Application::HandleUpdate(float dT)
 
 
 			vertexIndex = 0;
-			CreateSphere(mSpherePos);
+			sphereCollection[0]->mSpherePos = XMLoadFloat3(&mSpherePos);
+			sphereCollection[0]->mSphereAlive = true;
+			sphereCollection[0]->mSphereVel = XMVectorZero();
 			dbI = true;
 		}
 
@@ -309,7 +323,9 @@ void Application::HandleUpdate(float dT)
 
 			vertexIndex++;
 
-			CreateSphere(mSpherePos);
+			sphereCollection[0]->mSpherePos = XMLoadFloat3(&mSpherePos);
+			sphereCollection[0]->mSphereAlive = true;
+			sphereCollection[0]->mSphereVel = XMVectorZero();
 			dbD = true;
 
 		}
@@ -327,7 +343,9 @@ void Application::HandleUpdate(float dT)
 
 			mSpherePos = XMFLOAT3(5.0f, 20.0f, 0.0f);
 
-			CreateSphere(mSpherePos);
+			sphereCollection[0]->mSpherePos = XMLoadFloat3(&mSpherePos);
+			sphereCollection[0]->mSphereAlive = true;
+			sphereCollection[0]->mSphereVel = XMVectorZero();
 
 			mSpherePos = XMFLOAT3(-5.0f, 20.0f, 0.0f);
 
@@ -375,7 +393,7 @@ void Application::HandleUpdate(float dT)
 	}
 	if ((this->IsKeyPressed(' ') && over1) || !this->IsKeyPressed(' '))
 	{
-		//LoopSpheres();
+
 		for (Sphere* sphere : sphereCollection)
 		{
 			if (sphere->mSphereAlive)
@@ -416,7 +434,49 @@ void Application::HandleUpdate(float dT)
 		dbL = false;
 	}
 
+	static bool dbUp = false;
 
+	if (IsKeyPressed(VK_UP))
+	{
+		if (!dbUp)
+		{
+			XMFLOAT3 mSpherePos = XMFLOAT3((float)((rand() % 14 - 7.0f) - 0.5), 20.0f, (float)((rand() % 14 - 7.0f) - 0.5));
+			
+			if (aliveSpheres < SPHERESIZE - 1)
+			{
+				aliveSpheres++;
+			}
+			CreateSphere(mSpherePos);
+
+			dbUp = true;
+		}
+	}
+	else
+	{
+		dbUp = false;
+	}
+
+	static bool dbDown = false;
+
+	if (IsKeyPressed(VK_DOWN))
+	{
+		if (!dbDown)
+		{
+			if (aliveSpheres > 0)
+			{
+				if (sphereCollection[aliveSpheres]->mSphereAlive)
+				{
+					sphereCollection[aliveSpheres]->mSphereAlive = false;
+				}
+				aliveSpheres--;
+			}
+			dbDown = true;
+		}
+	}
+	else
+	{
+		dbDown = false;
+	}
 
 	
 }
@@ -490,7 +550,7 @@ void Application::HandleUpdate(float dT)
 }*/
 
 
-/*void Application::LoopSpheres() 
+void Application::LoopSpheres() 
 {
 	for (int i = 0; i < SPHERESIZE; ++i)
 	{
@@ -513,7 +573,7 @@ void Application::HandleUpdate(float dT)
 		}
 	}
 
-}*/
+}
 
 void Application::CheckSphereCollisions() 
 {

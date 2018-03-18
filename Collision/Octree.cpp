@@ -97,13 +97,3 @@ void Octree::CleanTree(Octree* root)
 	}
 }
 
-XMFLOAT3 static operator+ (const XMFLOAT3 a, const XMFLOAT3 b) 
-{
-	XMFLOAT3 output;
-	output.x = a.x + b.x;
-	output.y = a.y + b.y;
-	output.z = a.z + b.z;
-	return output;
-
-
-}

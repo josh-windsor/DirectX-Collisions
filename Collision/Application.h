@@ -96,6 +96,8 @@ private:
 
 
 	void ReloadShaders();
+
+	int aliveSpheres = 0;
 };
 
 #endif
