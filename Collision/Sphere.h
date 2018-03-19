@@ -49,6 +49,9 @@ public:
 	float mRadius = 1;
 	float mSphereSpeed;
 	bool mSphereAlive = false;
+	HeightMap* m_pHeightMap;
+
+	Sphere* mNextObj = nullptr;
 
 
 	bool SphereTriangleIntersection(int nFaceIndex, XMVECTOR& colNormN, float& penetration);
@@ -61,7 +64,6 @@ private:
 	XMMATRIX worldMtx;
 
 	XMVECTOR mGravityAcc;
-	HeightMap* m_pHeightMap;
 
 	bool mSphereCollided = false;
 

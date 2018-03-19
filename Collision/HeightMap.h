@@ -20,6 +20,7 @@ static const char *const g_aTextureFileNames[] = {
 
 static const size_t NUM_TEXTURE_FILES = sizeof g_aTextureFileNames / sizeof g_aTextureFileNames[0];
 
+class StaticOctree;
 class HeightMap
 {
 public:
@@ -57,6 +58,8 @@ public:
 	FaceCollisionData* m_pFaceData;
 	int m_HeightMapFaceCount;
 	void RebuildVertexData(void);
+
+	StaticOctree* m_pStaticOct;
 
 
 private:
@@ -107,6 +110,9 @@ private:
 	ID3D11Texture2D *m_pTextures[NUM_TEXTURE_FILES];
 	ID3D11ShaderResourceView *m_pTextureViews[NUM_TEXTURE_FILES];
 	ID3D11SamplerState *m_pSamplerState;
+
+
+	StaticOctree* BuildStaticSubNode(XMFLOAT3 iCenterPoint, float iSideLength, int iMaxDepth);
 
 };
 

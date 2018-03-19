@@ -13,10 +13,11 @@
 
 #include "CommonApp.h"
 #include "CommonMesh.h"
-#
+
 
 class HeightMap;
 class Sphere;
+class Octree;
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -30,7 +31,9 @@ class Sphere;
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-#define SPHERESIZE 100
+#define SPHERESIZE 50
+#define OCTREE_DEPTH 2
+
 
 __declspec(align(16)) struct SphereCollisionPair
 {
@@ -91,11 +94,40 @@ private:
 	bool SphereSphereIntersection(SphereCollisionPair& collisionPair);
 	void BounceSpheres(SphereCollisionPair& collisionPair);
 	void PositionalCorrection(SphereCollisionPair& collisionPair);
+	void TestCollisions(Octree* root);
+	Octree* BuildSubNode(XMFLOAT3 iCenterPoint, float iSideLength, int iDepth);
+
+
 	void LoopSpheres();
 	void CheckSphereCollisions();
 
 
 	void ReloadShaders();
+
+	int aliveSpheres = 0;
 };
+
+
+XMFLOAT3 static operator+ (const XMFLOAT3 a, const XMFLOAT3 b)
+{
+	XMFLOAT3 output;
+	output.x = a.x + b.x;
+	output.y = a.y + b.y;
+	output.z = a.z + b.z;
+	return output;
+
+
+}
+XMFLOAT3 static operator/ (const XMFLOAT3 a, const float b)
+{
+	XMFLOAT3 output;
+	output.x = a.x / b;
+	output.y = a.y / b;
+	output.z = a.z / b;
+	return output;
+
+
+}
+
 
 #endif

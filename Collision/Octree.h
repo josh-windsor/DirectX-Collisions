@@ -12,22 +12,38 @@
 using namespace DirectX;
 
 
-class Octree
+__declspec(align(16)) class Octree
 {
 public:
-	Octree(XMVECTOR iBoundingBottomLeftFront, XMVECTOR iBoundingTopRightBack, int iDepth);
+	Octree(XMFLOAT3 iCenterPoint, float iSideLength);
+	Octree();
 	~Octree();
-	void AddNode(Sphere* iNode);
-	void AddToChild(int subSection, XMVECTOR iBoundingBottomLeftFront, XMVECTOR iBoundingTopRightBack, Sphere* iNode);
 
-	const int depthLimit = 10;
+	void* operator new(size_t i)
+	{
+		return _mm_malloc(i, 16);
+	}
 
-	Octree* children[8] = { nullptr };
-	float sideLength;
-	std::vector<Sphere*> nodes;
-	int depth;
+	void operator delete(void* p)
+	{
+		_mm_free(p);
+	}
+
+
+	void AddNode(Octree* root, Sphere* iNode);
+	void CleanTree(Octree* root);
+	Sphere* sphereList = nullptr;
+	Octree * children[8] = { nullptr };
+
+
 private:
-	const XMVECTOR boundingBottomLeftFront;
+
+
+
 	XMFLOAT3 centralPoint;
+	float sideLength;
+
+
+
 };
 
