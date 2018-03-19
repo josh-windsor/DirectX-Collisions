@@ -94,12 +94,14 @@
     <ClCompile Include="HeightMap.cpp" />
     <ClCompile Include="Octree.cpp" />
     <ClCompile Include="Sphere.cpp" />
+    <ClCompile Include="StaticOctree.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
     <ClInclude Include="HeightMap.h" />
     <ClInclude Include="Octree.h" />
     <ClInclude Include="Sphere.h" />
+    <ClInclude Include="StaticOctree.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="Resources\ExampleShader.hlsl">

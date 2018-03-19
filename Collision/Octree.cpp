@@ -16,27 +16,6 @@ Octree::~Octree()
 
 Octree::Octree() {}
 
-Octree* Octree::BuildSubNode(XMFLOAT3 iCenterPoint, float iSideLength, int iMaxDepth)
-{
-	if (iMaxDepth >= 0)
-	{
-		Octree* newNode = new Octree(iCenterPoint, iSideLength);
-
-		XMFLOAT3 offset;
-		float step = iSideLength * 0.5f;
-
-		for (int i = 0; i < 8; ++i)
-		{
-			offset.x = ((i & 1)) ? step : -step;
-			offset.y = ((i & 2)) ? step : -step;
-			offset.z = ((i & 4)) ? step : -step;
-
-			newNode->children[i] = BuildSubNode(iCenterPoint + offset, step, iMaxDepth- 1);
-		}
-		return newNode;
-	}
-	return nullptr;
-}
 
 void Octree::AddNode(Octree* root, Sphere* iNode) 
 {
@@ -52,7 +31,7 @@ void Octree::AddNode(Octree* root, Sphere* iNode)
 
 	XMFLOAT3 f_rootPosition = root->centralPoint;
 
-	
+	//can copy as float3 is the same size as the array
 	memcpy_s(objectPosition, sizeof(objectPosition), &f_objectPosition, sizeof(XMFLOAT3));
 	memcpy_s(rootPosition  , sizeof(rootPosition  ), &f_rootPosition  , sizeof(XMFLOAT3));
 
@@ -74,10 +53,13 @@ void Octree::AddNode(Octree* root, Sphere* iNode)
 	}
 	if (!straddle && root->children[index])
 	{
+		//insert into subtree
+
 		AddNode(root->children[index], iNode);
 	}
 	else
 	{
+		//Stradling so has no child, will add onto list
 		iNode->mNextObj = root->sphereList;
 		root->sphereList = iNode;
 	}

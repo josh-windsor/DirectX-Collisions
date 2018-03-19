@@ -4,6 +4,7 @@ using namespace DirectX;
 
 
 #include "HeightMap.h"
+#include "StaticOctree.h"
 
 void Sphere::StartSphere(XMVECTOR iSpherePos) 
 {
@@ -22,10 +23,11 @@ void Sphere::Update(float dT)
 
 		XMVECTOR vSColPos, vSColNorm;
 
+		//integrated dt and swaped order
 		mSphereVel += mGravityAcc * dT; // The new velocity gets passed through to the collision so it can base its predictions on our speed NEXT FRAME
 		mSpherePos += mSphereVel * dT; // Really important that we add LAST FRAME'S velocity as this was how fast the collision is expecting the ball to move
 
-		
+		//if spheres are below the heightmap then deactivate
 		if (XMVectorGetY(mSpherePos) < -10.0f)
 		{
 			mSphereAlive = false;
@@ -60,7 +62,36 @@ bool Sphere::CheckSphereTriCollisions(XMVECTOR& colPos, XMVECTOR& colNormN, floa
 		m_pHeightMap->m_pFaceData[f].m_bCollided = false;
 
 
-	// This is a brute force solution that checks against every triangle in the heightmap
+
+	//XMFLOAT3 f_spherePos;
+	//XMStoreFloat3(&f_spherePos, mSpherePos);
+	//InputVertex* firstVert = m_pHeightMap->m_pStaticOct->GetCollisions(m_pHeightMap->m_pStaticOct, f_spherePos, 2);
+
+	//if (firstVert != nullptr)
+	//{
+	//	if (firstVert->index)
+	//	{
+	//		if (firstVert->index < m_pHeightMap->m_HeightMapFaceCount)
+	//		{
+
+
+	//			for (firstVert; firstVert != nullptr; firstVert = firstVert->nextVert)
+	//			{
+	//				if (!m_pHeightMap->m_pFaceData[firstVert->index].m_bDisabled && SphereTriangleIntersection(firstVert->index, colNormN, penetration))
+	//				{
+	//					m_pHeightMap->m_pFaceData[firstVert->index].m_bCollided = true;
+	//					m_pHeightMap->RebuildVertexData();
+	//					return true;
+
+	//				}
+	//			}
+	//		}
+	//	}
+
+	//}
+
+
+	//This is a brute force solution that checks against every triangle in the heightmap
 	for (int f = 0; f < m_pHeightMap->m_HeightMapFaceCount; ++f)
 	{
 		//012 213
@@ -72,6 +103,7 @@ bool Sphere::CheckSphereTriCollisions(XMVECTOR& colPos, XMVECTOR& colNormN, floa
 
 		}
 	}
+
 
 	return false;
 
@@ -88,11 +120,13 @@ bool Sphere::SphereTriangleIntersection(int nFaceIndex, XMVECTOR& collisionNorma
 
 	collisionNormal = XMLoadFloat3(&m_pHeightMap->m_pFaceData[nFaceIndex].m_vNormal);
 
+	//get the closest point on the triangle
 	XMVECTOR p = ClosestPointToTriangle(vert0, vert1, vert2);
 	XMVECTOR v = p - mSpherePos;
-
+	//determin the distance to the closest point
 	float distance = XMVectorGetX(XMVector3Dot(v, v));
 
+	//if the distance is close to the sphere
 	if (distance <= mRadius * mRadius)
 	{
 		penetration = mRadius - sqrt(distance);
@@ -105,11 +139,13 @@ bool Sphere::SphereTriangleIntersection(int nFaceIndex, XMVECTOR& collisionNorma
 
 void Sphere::BounceSphereTri(XMVECTOR colNormN)
 {
+	//gets the collision length along the normal with relative velocity
 	float normalVelocityLength = XMVectorGetX(XMVector3Dot(-mSphereVel, colNormN));
 	if (normalVelocityLength < 0.0f)
 	{
 		return;
 	}
+	//pushes along e value
 	float push = (-1.6f * normalVelocityLength);
 	mSphereVel -= push * colNormN;
 	

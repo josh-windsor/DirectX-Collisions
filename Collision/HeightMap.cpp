@@ -1,4 +1,5 @@
 #include "HeightMap.h"
+#include "StaticOctree.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -44,6 +45,63 @@ HeightMap::HeightMap(char* filename, float gridSize, float heightRange)
 
 
 	ReloadShader(); // This compiles the shader
+
+
+	//builds the static octree of the heightmap
+	XMFLOAT3 boundingBottomLeftFront;
+	XMFLOAT3 boundingTopRightBack;
+	bool firstLoop = true;
+
+	//determines the bounding box of the octree
+	for(int i = 0; i < m_HeightMapFaceCount; ++i)
+	{
+		XMFLOAT3 currentVertPos = m_pFaceData[i].m_vCenter;
+		if (firstLoop)
+		{
+			boundingBottomLeftFront = currentVertPos;
+			firstLoop = false;
+		}
+
+		if (currentVertPos.x < boundingBottomLeftFront.x)
+		{
+			boundingBottomLeftFront.x = currentVertPos.x;
+		}
+		if (currentVertPos.y < boundingBottomLeftFront.y)
+		{
+			boundingBottomLeftFront.y = currentVertPos.y;
+		}
+		if (currentVertPos.z < boundingBottomLeftFront.z)
+		{
+			boundingBottomLeftFront.z = currentVertPos.z;
+		}
+		if (currentVertPos.x > boundingTopRightBack.x)
+		{
+			boundingTopRightBack.x = currentVertPos.x;
+		}
+		if (currentVertPos.y > boundingTopRightBack.y)
+		{
+			boundingTopRightBack.y = currentVertPos.y;
+		}
+		if (currentVertPos.z > boundingTopRightBack.z)
+		{
+			boundingTopRightBack.z = currentVertPos.z;
+		}
+
+
+	}
+	XMFLOAT3 f_centralP = (boundingBottomLeftFront + boundingTopRightBack) / 2;
+	//creates an octree using the geometry
+	m_pStaticOct = BuildStaticSubNode(f_centralP, fabs(boundingBottomLeftFront.x - boundingTopRightBack.x), 2);
+	//adds all the vertices to the octree
+	for (int i = 0; i < m_HeightMapFaceCount; ++i)
+	{
+		InputVertex inputVert;
+		inputVert.index = i;
+		inputVert.centralPosition = XMLoadFloat3(&m_pFaceData[i].m_vCenter);
+		
+		m_pStaticOct->AddNode(m_pStaticOct, &inputVert);
+	}
+
 }
 
 
@@ -223,7 +281,7 @@ HeightMap::~HeightMap()
 	}
 
 	Release(m_pHeightMapBuffer);
-
+	m_pStaticOct->CleanTree(m_pStaticOct);
 	DeleteShader();
 }
 
@@ -885,4 +943,26 @@ bool HeightMap::PointPlane(const XMVECTOR& vert0, const XMVECTOR& vert1, const X
 
 	// Step 5: Return true! (in front of plane)
 	return true;
+}
+
+StaticOctree* HeightMap::BuildStaticSubNode(XMFLOAT3 iCenterPoint, float iSideLength, int iMaxDepth)
+{
+	if (iMaxDepth >= 0)
+	{
+		StaticOctree* newNode = new StaticOctree(iCenterPoint, iSideLength);
+
+		XMFLOAT3 offset;
+		float step = iSideLength * 0.5f;
+
+		for (int i = 0; i < 8; ++i)
+		{
+			offset.x = ((i & 1)) ? step : -step;
+			offset.y = ((i & 2)) ? step : -step;
+			offset.z = ((i & 4)) ? step : -step;
+
+			newNode->children[i] = BuildStaticSubNode(iCenterPoint + offset, step, iMaxDepth - 1);
+		}
+		return newNode;
+	}
+	return nullptr;
 }

@@ -12,14 +12,24 @@
 using namespace DirectX;
 
 
-class Octree
+__declspec(align(16)) class Octree
 {
 public:
 	Octree(XMFLOAT3 iCenterPoint, float iSideLength);
 	Octree();
 	~Octree();
 
-	Octree* BuildSubNode(XMFLOAT3 iCenterPoint, float iSideLength, int iDepth);
+	void* operator new(size_t i)
+	{
+		return _mm_malloc(i, 16);
+	}
+
+	void operator delete(void* p)
+	{
+		_mm_free(p);
+	}
+
+
 	void AddNode(Octree* root, Sphere* iNode);
 	void CleanTree(Octree* root);
 	Sphere* sphereList = nullptr;
@@ -33,18 +43,7 @@ private:
 	XMFLOAT3 centralPoint;
 	float sideLength;
 
-	static const int depthLimit = 5;
 
 
 };
 
-XMFLOAT3 static operator+ (const XMFLOAT3 a, const XMFLOAT3 b)
-{
-	XMFLOAT3 output;
-	output.x = a.x + b.x;
-	output.y = a.y + b.y;
-	output.z = a.z + b.z;
-	return output;
-
-
-}

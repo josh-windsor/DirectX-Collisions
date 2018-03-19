@@ -36,7 +36,7 @@ bool Application::HandleStart()
 
 	m_cameraState = CAMERA_ROTATE;
 
-	//create all at beginning to save time
+	//create all at beginning to save allocations
 	for (int i = 0; i < SPHERESIZE; i++)
 	{
 		sphereCollection[i] = new Sphere(m_pSphereMesh, m_pHeightMap);
@@ -49,6 +49,10 @@ bool Application::HandleStart()
 
 
 
+	
+
+	
+
 	return true;
 }
 
@@ -57,7 +61,7 @@ void Application::CreateSphere(XMFLOAT3 iSpherePos)
 	static int lastIndex = 0;
 	for (int i = 0; i < SPHERESIZE; i++)
 	{
-
+		
 		if (!sphereCollection[i]->mSphereAlive)
 		{
 			
@@ -71,8 +75,6 @@ void Application::CreateSphere(XMFLOAT3 iSpherePos)
 	}
 	sphereCollection[lastIndex]->StartSphere(XMLoadFloat3(&iSpherePos));
 	lastIndex++;
-
-
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -349,6 +351,11 @@ void Application::HandleUpdate(float dT)
 
 			mSpherePos = XMFLOAT3(-5.0f, 20.0f, 0.0f);
 
+			if (aliveSpheres < SPHERESIZE - 1)
+			{
+				aliveSpheres++;
+			}
+
 			CreateSphere(mSpherePos);
 			dbF = true;
 
@@ -480,6 +487,29 @@ void Application::HandleUpdate(float dT)
 
 	
 }
+Octree* Application::BuildSubNode(XMFLOAT3 iCenterPoint, float iSideLength, int iMaxDepth)
+{
+	//if below max depth end
+	if (iMaxDepth >= 0)
+	{
+		Octree* newNode = new Octree(iCenterPoint, iSideLength);
+
+		XMFLOAT3 offset;
+		float step = iSideLength * 0.5f;
+		//determine which oct side to place build the subnode
+		for (int i = 0; i < 8; ++i)
+		{
+			offset.x = ((i & 1)) ? step : -step;
+			offset.y = ((i & 2)) ? step : -step;
+			offset.z = ((i & 4)) ? step : -step;
+			//recursively build children
+			newNode->children[i] = BuildSubNode(iCenterPoint + offset, step, iMaxDepth - 1);
+		}
+		return newNode;
+	}
+	return nullptr;
+}
+
 
 void Application::LoopSpheres()
 {
@@ -487,6 +517,7 @@ void Application::LoopSpheres()
 	XMFLOAT3 boundingTopRightBack;
 	int spheresFound = 0;
 	bool firstLoop = true;
+	//loops through to determine the bounding box
 	for (int i = 0; i < SPHERESIZE; i++)
 	{
 		if (sphereCollection[i]->mSphereAlive)
@@ -526,56 +557,53 @@ void Application::LoopSpheres()
 			spheresFound++;
 		}
 	}
-	int nodes = 0;
 	if (spheresFound > 1)
 	{
-		XMVECTOR v_boundingBottomLeftFront = XMLoadFloat3(&boundingBottomLeftFront);
-		XMVECTOR v_boundingTopRightBack = XMLoadFloat3(&boundingTopRightBack);
-		XMVECTOR v_centralP = (v_boundingBottomLeftFront + v_boundingTopRightBack) / 2;
-		XMFLOAT3 f_centralP;
-		XMStoreFloat3(&f_centralP, v_centralP);
-		Octree baseOct = Octree();
 
-		Octree* newOct = baseOct.BuildSubNode(f_centralP, fabs(boundingBottomLeftFront.x - boundingTopRightBack.x), 2);
+		XMFLOAT3 f_centralP = (boundingBottomLeftFront + boundingTopRightBack) / 2;
+
+		Octree* baseOct = BuildSubNode(f_centralP, fabs(boundingBottomLeftFront.x - boundingTopRightBack.x), 2);
 
 
 		for (int i = 0; i < SPHERESIZE; i++)
 		{
 			if (sphereCollection[i]->mSphereAlive)
 			{
-				newOct->AddNode(newOct, sphereCollection[i]);
+				baseOct->AddNode(baseOct, sphereCollection[i]);
 			}
 		}
-		TestCollisions(newOct);
-
-
-
+		TestCollisions(baseOct);
+		baseOct->CleanTree(baseOct);
 	}
 
 	
 }
 
+
+
+
 void Application::TestCollisions(Octree* root)
 {
-	const int MAX_DEPTH = 2;
 
-	static Octree *ancestorStack[MAX_DEPTH];
+	static Octree *ancestorStack[OCTREE_DEPTH];
 	static int depth = 0;
 
 	ancestorStack[depth++] = root;
+	//loop through all spheres in the list 
 	for (int n = 0; n < depth; n++) {
-		Sphere *pA, *pB;
-		for (pA = ancestorStack[n]->sphereList; pA != nullptr; pA = pA->mNextObj) {
-			for (pB = root->sphereList; pB; pB = pB->mNextObj) {
-				// Avoid testing both A->B and B->A
-				if (pA == pB) break;
-				// Now perform the collision test between pA and pB in some manner
-				SphereCollisionPair newPair;
-				newPair.firstSphere = pA;
-				newPair.secondSphere = pB;
-				newPair.normal = XMVectorZero();
-				newPair.penetration = 0.0f;
-				collisionPairs.push_back(newPair);
+		Sphere *sphereA, *sphereB;
+		for (sphereA = ancestorStack[n]->sphereList; sphereA != nullptr; sphereA = sphereA->mNextObj) {
+			for (sphereB = root->sphereList; sphereB != nullptr; sphereB = sphereB->mNextObj) {
+				if (sphereA != sphereB)
+				{
+					// Now perform the collision test 
+					SphereCollisionPair newPair;
+					newPair.firstSphere = sphereA;
+					newPair.secondSphere = sphereB;
+					newPair.normal = XMVectorZero();
+					newPair.penetration = 0.0f;
+					collisionPairs.push_back(newPair);
+				}
 			}
 		}
 	}
@@ -615,38 +643,41 @@ void Application::TestCollisions(Octree* root)
 
 void Application::CheckSphereCollisions() 
 {
-	int testPairs = 0;
+	//loops through all the collision pairs
 	for (SphereCollisionPair sCP : collisionPairs)
 	{
+		//checks if they are intersecting
 		if (SphereSphereIntersection(sCP))
 
 		{
+			//bounces then corrects the spheres
 			BounceSpheres(sCP);
 			PositionalCorrection(sCP);
 			
 		}
-		testPairs++;
 	}
-	dprintf("%i\n", testPairs);
+	//clears the collision pairs
 	collisionPairs.clear();
 }
 
 bool Application::SphereSphereIntersection(SphereCollisionPair& collisionPair)
 {
-
+	//gets the vector between the points
 	XMVECTOR collisionNormal = collisionPair.firstSphere->mSpherePos - collisionPair.secondSphere->mSpherePos;
-
+	//works out the distance between them
 	float distance = XMVectorGetX(XMVector3LengthSq(collisionNormal));
-
+	//computes the radius sqr of both the spheres
 	float radius = collisionPair.firstSphere->mRadius + collisionPair.secondSphere->mRadius;
 	float radiusSqr = radius * radius;
 
+	//checks if the distance is further than intersecting
 	if (distance > radiusSqr)
 	{
 		return false;
 	}
 
 	distance = sqrtf(distance);
+	//generates the collision normal and the penetration into the collision
 	collisionPair.normal = collisionNormal / distance;
 	collisionPair.penetration = radius - distance;
 
@@ -656,14 +687,16 @@ bool Application::SphereSphereIntersection(SphereCollisionPair& collisionPair)
 
 void Application::BounceSpheres(SphereCollisionPair& collisionPair)
 {
+	//gets the relative velocity length
 	float normalVelocityLength = XMVectorGetX(XMVector3Dot((collisionPair.secondSphere->mSphereVel - collisionPair.firstSphere->mSphereVel), collisionPair.normal));
 
-
+	//calculates the component of the push force using the e value as -1.5
 	float u = (-1.5f * normalVelocityLength) / (collisionPair.firstSphere->mInvMass + collisionPair.secondSphere->mInvMass);
 
 
 	XMVECTOR push = u * collisionPair.normal;
 
+	//pushes both spheres apart
 	collisionPair.firstSphere->mSphereVel -= push;
 	collisionPair.secondSphere->mSphereVel += push;
 
@@ -673,6 +706,7 @@ void Application::PositionalCorrection(SphereCollisionPair& collisionPair)
 {
 	const float percent = 0.90f; 
 	const float slop = 0.001f;
+	//calculates the correction by reversing the penetration on the spheres
 	XMVECTOR vecCorrection = max(collisionPair.penetration - slop, 0.0f) / (collisionPair.firstSphere->mInvMass + collisionPair.secondSphere->mInvMass) * percent * collisionPair.normal;
 
 	collisionPair.firstSphere->mSpherePos  += vecCorrection;
